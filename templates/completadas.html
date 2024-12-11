@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Citas Completadas</title>
+</head>
+<body>
+    <div class="container mt-5">
+        <!-- Botón de Inicio -->
+        <div class="mb-3">
+            <a href="/" class="btn btn-info">Inicio</a>
+        </div>
+        <h1 class="text-center">Citas Completadas</h1>
+        <a href="/vencidas" class="btn btn-danger mb-3">Ver Citas Vencidas</a>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Contenedor</th>
+                    <th>Chofer</th>
+                    <th>Cédula</th>
+                    <th>Placa</th>
+                    <th>Naviera</th>
+                    <th>Fecha</th>
+                    <th>Horario</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cita in citas %}
+                <tr>
+                    <td>{{ cita['id'] }}</td>
+                    <td>{{ cita['contenedor'] }}</td>
+                    <td>{{ cita['chofer_nombre'] }}</td>
+                    <td>{{ cita['chofer_cedula'] }}</td>
+                    <td>{{ cita['cabezal_placa'] }}</td>
+                    <td>{{ cita['naviera'] }}</td>
+                    <td>{{ cita['fecha'] }}</td>
+                    <td>{{ cita['horario'] }}</td>
+                    <td>
+                        <a href="/generar-pdf/{{ cita['id'] }}" class="btn btn-secondary btn-sm">Descargar PDF</a>
+                        <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#codigoModalRevertir" data-id="{{ cita['id'] }}">Regresar a Pendientes</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Modal para solicitar código de autorización para regresar a pendientes -->
+    <div class="modal fade" id="codigoModalRevertir" tabindex="-1" aria-labelledby="codigoModalRevertirLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="codigoModalRevertirLabel">Regresar a Pendientes</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Introduce el código de autorización para regresar esta cita a pendientes:</p>
+                    <input type="password" id="codigo_autorizacion_revertir" class="form-control" placeholder="Código" required>
+                    <div id="revertirError" class="text-danger mt-2" style="display: none;">Código de autorización incorrecto.</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-warning" onclick="validarCodigoRevertir()">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let citaIdToRevert = null;
+
+        // Asignar el ID de la cita al abrir el modal de revertir
+        document.getElementById('codigoModalRevertir').addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            citaIdToRevert = button.getAttribute('data-id');
+        });
+
+        // Validar código de autorización para regresar a pendientes
+        function validarCodigoRevertir() {
+            const codigo = document.getElementById("codigo_autorizacion_revertir").value;
+            const errorDiv = document.getElementById("revertirError");
+
+            if (codigo === "12345") {
+                errorDiv.style.display = "none";
+                fetch(`/revertir-cita/${citaIdToRevert}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ codigo_autorizacion: codigo })
+                })
+                .then(response => {
+                    if (response.ok) {
+                        location.reload();
+                    } else {
+                        response.text().then(text => {
+                            errorDiv.textContent = text;
+                            errorDiv.style.display = "block";
+                        });
+                    }
+                });
+            } else {
+                errorDiv.textContent = "Código de autorización incorrecto.";
+                errorDiv.style.display = "block";
+            }
+        }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

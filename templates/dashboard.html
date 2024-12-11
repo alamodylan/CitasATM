@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Dashboard - Administradores</title>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center">Dashboard - Estadísticas</h1>
+        <a href="/" class="btn btn-info mb-3">Inicio</a>
+
+        <!-- Formulario de Filtros -->
+        <form method="GET" action="/dashboard" class="mb-4">
+            <div class="row g-2">
+                <div class="col-md-2">
+                    <input type="date" name="fecha" class="form-control" value="{{ filtros.fecha }}">
+                </div>
+                <div class="col-md-2">
+                    <select name="naviera" class="form-select">
+                        <option value="">Todas las Navieras</option>
+                        <option value="COSCO" {% if filtros.naviera == "COSCO" %}selected{% endif %}>COSCO</option>
+                        <option value="ONE" {% if filtros.naviera == "ONE" %}selected{% endif %}>ONE</option>
+                        <option value="OOCL" {% if filtros.naviera == "OOCL" %}selected{% endif %}>OOCL</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select name="tipo_operacion" class="form-select">
+                        <option value="">Todos los Movimientos</option>
+                        <option value="Retira" {% if filtros.tipo_operacion == "Retira" %}selected{% endif %}>Retira</option>
+                        <option value="Entrega" {% if filtros.tipo_operacion == "Entrega" %}selected{% endif %}>Entrega</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select name="horario" class="form-select">
+                        <option value="">Todos los Horarios</option>
+                        {% for horario in horarios %}
+                        <option value="{{ horario }}" {% if filtros.horario == horario %}selected{% endif %}>{{ horario }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select name="estado" class="form-select">
+                        <option value="">Todos los Estados</option>
+                        <option value="Pendiente" {% if filtros.estado == "Pendiente" %}selected{% endif %}>Pendiente</option>
+                        <option value="Completada" {% if filtros.estado == "Completada" %}selected{% endif %}>Completada</option>
+                        <option value="Vencida" {% if filtros.estado == "Vencida" %}selected{% endif %}>Vencida</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary">Filtrar</button>
+                </div>
+            </div>
+        </form>
+
+        <!-- Tabla de Citas Filtradas -->
+        <h4>Citas Filtradas</h4>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Contenedor</th>
+                    <th>Chofer</th>
+                    <th>Naviera</th>
+                    <th>Fecha</th>
+                    <th>Horario</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cita in citas_filtradas %}
+                <tr>
+                    <td>{{ cita.id }}</td>
+                    <td>{{ cita.contenedor }}</td>
+                    <td>{{ cita.chofer_nombre }}</td>
+                    <td>{{ cita.naviera }}</td>
+                    <td>{{ cita.fecha }}</td>
+                    <td>{{ cita.horario }}</td>
+                    <td>{{ cita.estado }}</td>
+                </tr>
+                {% endfor %}
+                {% if not citas_filtradas %}
+                <tr>
+                    <td colspan="7" class="text-center">No se encontraron resultados para los filtros seleccionados.</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+
+        <!-- Botones de Exportación -->
+        <a href="/exportar-todas-citas" class="btn btn-primary mb-3">Exportar Listado Completo</a>
+        <a href="/exportar-estadisticas?{{ request.query_string.decode('utf-8') }}" class="btn btn-secondary mb-3">Exportar Estadísticas Filtradas</a>
+    </div>
+</body>
+</html>

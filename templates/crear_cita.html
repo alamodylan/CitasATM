@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Crear Cita</title>
+</head>
+<body>
+    <div class="container mt-5">
+        <!-- Botón Inicio -->
+        <div class="mb-3">
+            <a href="/" class="btn btn-info">Inicio</a>
+        </div>
+        <h1 class="text-center">Crear Cita</h1>
+        <form method="POST" action="/crear-cita">
+            <div class="mb-3">
+                <label for="contenedor" class="form-label">Contenedor</label>
+                <input type="text" id="contenedor" name="contenedor" class="form-control" required pattern="[A-Z]{4}[0-9]{7}" title="Debe contener 4 letras seguidas de 7 números (ejemplo: ABCD1234567)">
+            </div>
+            <div class="mb-3">
+                <label for="chofer_nombre" class="form-label">Nombre del Chofer</label>
+                <input type="text" id="chofer_nombre" name="chofer_nombre" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label for="chofer_cedula" class="form-label">Cédula del Chofer</label>
+                <input type="text" id="chofer_cedula" name="chofer_cedula" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label for="cabezal_placa" class="form-label">Placa del Cabezal</label>
+                <input type="text" id="cabezal_placa" name="cabezal_placa" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label for="naviera" class="form-label">Naviera</label>
+                <select id="naviera" name="naviera" class="form-select" required>
+                    <option value="" disabled selected>Seleccione una naviera</option>
+                    <option value="COSCO">COSCO</option>
+                    <option value="ONE">ONE</option>
+                    <option value="OOCL">OOCL</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="estado_contenedor" class="form-label">Estado del Contenedor</label>
+                <select id="estado_contenedor" name="estado_contenedor" class="form-select" required>
+                    <option value="" disabled selected>Seleccione un estado</option>
+                    <option value="Cargado">Cargado</option>
+                    <option value="Vacio">Vacío</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="tipo_operacion" class="form-label">Tipo de Operación</label>
+                <select id="tipo_operacion" name="tipo_operacion" class="form-select" required>
+                    <option value="" disabled selected>Seleccione una operación</option>
+                    <option value="Retira">Retira</option>
+                    <option value="Entrega">Entrega</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="fecha" class="form-label">Fecha</label>
+                <input type="date" id="fecha" name="fecha" class="form-control" required min="{{ current_date }}">
+            </div>
+            <div class="mb-3">
+                <label for="horario" class="form-label">Horario</label>
+                <select id="horario" name="horario" class="form-select" required>
+                    {% for slot in time_slots %}
+                        <option value="{{ slot }}">{{ slot }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Crear Cita</button>
+        </form>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
