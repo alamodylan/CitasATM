@@ -2,7 +2,7 @@ import re
 from flask import Flask, render_template, request, redirect, url_for, send_file
 import sqlite3
 from datetime import datetime, timedelta
-from datetime import pytz
+import pytz
 import os
 from fpdf import FPDF
 from openpyxl import Workbook
