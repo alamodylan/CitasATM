@@ -69,7 +69,7 @@ def init_db():
 def home():
     # Configurar la zona horaria
     zona_local = pytz.timezone('America/Costa_Rica')
-    now = datetime.now(zona_local)  # Obtener la hora actual en la zona horaria de América Central
+    now = datetime.now(zona_local)  # Hora actual en zona horaria local
 
     conn = get_db_connection()
     pendientes = conn.execute("SELECT * FROM citas WHERE estado = 'Pendiente'").fetchall()
@@ -80,8 +80,12 @@ def home():
     for cita in pendientes:
         cita_date = cita["fecha"]
         cita_end_time = cita["horario"].split("-")[1]
-        cita_end_datetime = zona_local.localize(datetime.strptime(f"{cita_date} {cita_end_time}", "%Y-%m-%d %H:%M"))
 
+        # Convertir fecha y hora de la cita a zona horaria local
+        cita_end_datetime = datetime.strptime(f"{cita_date} {cita_end_time}", "%Y-%m-%d %H:%M")
+        cita_end_datetime = zona_local.localize(cita_end_datetime)
+
+        # Comparar con la hora actual
         if cita_end_datetime + timedelta(hours=1) < now and cita["estado"] == "Pendiente":
             conn.execute("UPDATE citas SET estado = 'Vencida' WHERE id = ?", (cita["id"],))
     conn.commit()
