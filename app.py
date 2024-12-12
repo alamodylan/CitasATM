@@ -10,6 +10,9 @@ from flask import jsonify, render_template
 from io import BytesIO
 from openpyxl import Workbook
 import sqlite3
+import psycopg2 
+from psycopg2 import connect
+from psycopg2.extras import RealDictCursor
 
 app = Flask(__name__)
 
@@ -40,31 +43,44 @@ class PDF(FPDF):
         self.cell(0, 10, f'Página {self.page_no()}', align='C')
 
 def get_db_connection():
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
-    return conn
+    DATABASE_URL = "postgresql://citasatm_user:SlwK1sFIPJal7m8KaDtlRlYu1NseKxnV@dpg-ctdis2jv2p9s73ai7op0-a.oregon-postgres.render.com/citasatm_db"
+    try:
+        # Intentar conectar a la base de datos
+        conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+        return conn
+    except Exception as e:
+        # Imprimir el error y volver a lanzarlo
+        print(f"Error al conectar con la base de datos: {e}")
+        raise
 
 def init_db():
-    conn = sqlite3.connect(db_path)
+    # Conexión a la base de datos PostgreSQL
+    conn = get_db_connection()
     cursor = conn.cursor()
-    # Crear la tabla 'citas' si no existe
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS citas (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            contenedor TEXT NOT NULL,
-            chofer_nombre TEXT NOT NULL,
-            chofer_cedula TEXT NOT NULL,
-            cabezal_placa TEXT NOT NULL,
-            fecha TEXT NOT NULL,
-            horario TEXT NOT NULL,
-            naviera TEXT NOT NULL,
-            estado_contenedor TEXT NOT NULL,  -- Nuevo campo
-            tipo_operacion TEXT NOT NULL,     -- Nuevo campo
-            estado TEXT DEFAULT 'Pendiente'
-        )
-    """)
-    conn.commit()
-    conn.close()
+    try:
+        # Crear la tabla 'citas' si no existe
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS citas (
+                id SERIAL PRIMARY KEY,
+                contenedor TEXT NOT NULL,
+                chofer_nombre TEXT NOT NULL,
+                chofer_cedula TEXT NOT NULL,
+                cabezal_placa TEXT NOT NULL,
+                fecha DATE NOT NULL,
+                horario TEXT NOT NULL,
+                naviera TEXT NOT NULL,
+                estado_contenedor TEXT NOT NULL,  -- Nuevo campo
+                tipo_operacion TEXT NOT NULL,     -- Nuevo campo
+                estado TEXT DEFAULT 'Pendiente'
+            )
+        """)
+        conn.commit()
+        print("Tabla 'citas' creada o verificada exitosamente.")
+    except Exception as e:
+        print(f"Error al inicializar la base de datos: {e}")
+    finally:
+        cursor.close()
+        conn.close()
 @app.route("/")
 def home():
     # Configurar la zona horaria
