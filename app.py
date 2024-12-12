@@ -551,7 +551,12 @@ def exportar_todas_citas():
 if __name__ == "__main__":
     if not os.path.exists(db_path):
         init_db()
-    app.run(host="192.168.80.123", port=5000, debug=True)
+
+    # Usa el puerto asignado por Render, o 5000 como respaldo
+    port = int(os.environ.get("PORT", 5000))
+
+    # Ejecuta la app con host accesible públicamente
+    app.run(host="0.0.0.0", port=port)
 
 
 
