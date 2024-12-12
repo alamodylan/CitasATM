@@ -349,6 +349,7 @@ def dashboard():
     tipo_operacion = request.args.get('tipo_operacion', '')
     horario = request.args.get('horario', '')
     estado = request.args.get('estado', '')
+    estado_contenedor = request.args.get('estado_contenedor', '')  # Nuevo filtro
 
     # Construir consulta dinámica basada en los filtros
     query = "SELECT * FROM citas WHERE 1=1"
@@ -369,6 +370,9 @@ def dashboard():
     if estado:
         query += " AND estado = ?"
         params.append(estado)
+    if estado_contenedor:  # Aplica el nuevo filtro
+        query += " AND estado_contenedor = ?"
+        params.append(estado_contenedor)
 
     # Ejecutar la consulta con filtros
     citas_filtradas = conn.execute(query, params).fetchall()
@@ -401,6 +405,7 @@ def dashboard():
             "tipo_operacion": tipo_operacion,
             "horario": horario,
             "estado": estado,
+            "estado_contenedor": estado_contenedor,  # Pasa el nuevo filtro al template
         }
     )
 
@@ -413,6 +418,7 @@ def exportar_estadisticas():
     filtro_naviera = request.args.get("naviera")
     filtro_tipo_operacion = request.args.get("tipo_operacion")
     filtro_horario = request.args.get("horario")
+    filtro_estado_contenedor = request.args.get("estado_contenedor")  # Nuevo filtro
 
     # Construir consulta con filtros dinámicos
     query = """
@@ -434,6 +440,9 @@ def exportar_estadisticas():
     if filtro_horario:
         query += " AND horario = ?"
         params.append(filtro_horario)
+    if filtro_estado_contenedor:  # Aplica el nuevo filtro
+        query += " AND estado_contenedor = ?"
+        params.append(filtro_estado_contenedor)
 
     # Ejecutar consulta
     citas_filtradas = conn.execute(query, params).fetchall()
@@ -469,6 +478,7 @@ def exportar_citas():
     naviera = request.args.get('naviera', '')
     tipo_operacion = request.args.get('tipo_operacion', '')
     horario = request.args.get('horario', '')
+    estado_contenedor = request.args.get('estado_contenedor', '')  # Nuevo filtro
 
     # Construir la consulta con los filtros
     query = """
@@ -481,18 +491,18 @@ def exportar_citas():
     if fecha:
         query += " AND fecha = ?"
         params.append(fecha)
-
     if naviera:
         query += " AND naviera = ?"
         params.append(naviera)
-
     if tipo_operacion:
         query += " AND tipo_operacion = ?"
         params.append(tipo_operacion)
-
     if horario:
         query += " AND horario = ?"
         params.append(horario)
+    if estado_contenedor:  # Aplica el nuevo filtro
+        query += " AND estado_contenedor = ?"
+        params.append(estado_contenedor)
 
     # Ejecutar la consulta
     citas = conn.execute(query, params).fetchall()

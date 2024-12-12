@@ -49,6 +49,13 @@
                     </select>
                 </div>
                 <div class="col-md-2">
+                    <select name="estado_contenedor" class="form-select"> <!-- Nuevo filtro -->
+                        <option value="">Todos los Estados</option>
+                        <option value="Cargado" {% if filtros.estado_contenedor == "Cargado" %}selected{% endif %}>Cargado</option>
+                        <option value="Vacio" {% if filtros.estado_contenedor == "Vacio" %}selected{% endif %}>Vacío</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
                     <button type="submit" class="btn btn-primary">Filtrar</button>
                 </div>
             </div>
