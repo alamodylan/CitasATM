@@ -2,6 +2,7 @@ import re
 from flask import Flask, render_template, request, redirect, url_for, send_file
 import sqlite3
 from datetime import datetime, timedelta
+from datetime import pytz
 import os
 from fpdf import FPDF
 from openpyxl import Workbook
@@ -66,17 +67,20 @@ def init_db():
     conn.close()
 @app.route("/")
 def home():
+    # Configurar la zona horaria
+    zona_local = pytz.timezone('America/Costa_Rica')
+    now = datetime.now(zona_local)  # Obtener la hora actual en la zona horaria de América Central
+
     conn = get_db_connection()
     pendientes = conn.execute("SELECT * FROM citas WHERE estado = 'Pendiente'").fetchall()
     conn.close()
 
     # Verificar citas vencidas
-    now = datetime.now()
     conn = get_db_connection()
     for cita in pendientes:
         cita_date = cita["fecha"]
         cita_end_time = cita["horario"].split("-")[1]
-        cita_end_datetime = datetime.strptime(f"{cita_date} {cita_end_time}", "%Y-%m-%d %H:%M")
+        cita_end_datetime = zona_local.localize(datetime.strptime(f"{cita_date} {cita_end_time}", "%Y-%m-%d %H:%M"))
 
         if cita_end_datetime + timedelta(hours=1) < now and cita["estado"] == "Pendiente":
             conn.execute("UPDATE citas SET estado = 'Vencida' WHERE id = ?", (cita["id"],))
