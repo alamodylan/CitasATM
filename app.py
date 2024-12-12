@@ -88,43 +88,67 @@ def home():
     now = datetime.now(zona_local)  # Hora actual en zona horaria local
 
     conn = get_db_connection()
-    pendientes = conn.execute("SELECT * FROM citas WHERE estado = 'Pendiente'").fetchall()
-    conn.close()
+    cursor = conn.cursor()
+    
+    try:
+        # Obtener las citas pendientes
+        cursor.execute("SELECT * FROM citas WHERE estado = 'Pendiente'")
+        pendientes = cursor.fetchall()
 
-    # Verificar citas vencidas
-    conn = get_db_connection()
-    for cita in pendientes:
-        cita_date = cita["fecha"]
-        cita_end_time = cita["horario"].split("-")[1]
+        # Verificar citas vencidas
+        for cita in pendientes:
+            cita_date = cita["fecha"]
+            cita_end_time = cita["horario"].split("-")[1]
 
-        # Convertir fecha y hora de la cita a zona horaria local
-        cita_end_datetime = datetime.strptime(f"{cita_date} {cita_end_time}", "%Y-%m-%d %H:%M")
-        cita_end_datetime = zona_local.localize(cita_end_datetime)
+            # Convertir fecha y hora de la cita a zona horaria local
+            cita_end_datetime = datetime.strptime(f"{cita_date} {cita_end_time}", "%Y-%m-%d %H:%M")
+            cita_end_datetime = zona_local.localize(cita_end_datetime)
 
-        # Comparar con la hora actual
-        if cita_end_datetime + timedelta(hours=1) < now and cita["estado"] == "Pendiente":
-            conn.execute("UPDATE citas SET estado = 'Vencida' WHERE id = ?", (cita["id"],))
-    conn.commit()
-    conn.close()
+            # Comparar con la hora actual
+            if cita_end_datetime + timedelta(hours=1) < now and cita["estado"] == "Pendiente":
+                cursor.execute("UPDATE citas SET estado = 'Vencida' WHERE id = %s", (cita["id"],))
+                conn.commit()
 
-    conn = get_db_connection()
-    pendientes = conn.execute("SELECT * FROM citas WHERE estado = 'Pendiente'").fetchall()
-    conn.close()
+        # Actualizar pendientes
+        cursor.execute("SELECT * FROM citas WHERE estado = 'Pendiente'")
+        pendientes = cursor.fetchall()
+    
+    finally:
+        cursor.close()
+        conn.close()
 
     return render_template("index.html", citas=pendientes)
 
 @app.route("/vencidas")
 def vencidas():
     conn = get_db_connection()
-    vencidas = conn.execute("SELECT * FROM citas WHERE estado = 'Vencida'").fetchall()
-    conn.close()
+    cursor = conn.cursor()
+    
+    try:
+        # Ejecutar la consulta para obtener citas vencidas
+        cursor.execute("SELECT * FROM citas WHERE estado = 'Vencida'")
+        vencidas = cursor.fetchall()
+    finally:
+        # Cerrar cursor y conexión
+        cursor.close()
+        conn.close()
+    
     return render_template("vencidas.html", citas=vencidas)
 
 @app.route("/completadas")
 def completadas():
     conn = get_db_connection()
-    completadas = conn.execute("SELECT * FROM citas WHERE estado = 'Completada'").fetchall()
-    conn.close()
+    cursor = conn.cursor()
+    
+    try:
+        # Ejecutar la consulta para obtener citas completadas
+        cursor.execute("SELECT * FROM citas WHERE estado = 'Completada'")
+        completadas = cursor.fetchall()
+    finally:
+        # Cerrar cursor y conexión
+        cursor.close()
+        conn.close()
+    
     return render_template("completadas.html", citas=completadas)
 @app.route("/revertir-cita/<int:id>", methods=["POST"])
 def revertir_cita(id):
@@ -134,11 +158,17 @@ def revertir_cita(id):
     if codigo_autorizacion != "12345":
         return "Código de autorización incorrecto.", 403
 
-    # Cambiar el estado de la cita a "Pendiente"
     conn = get_db_connection()
-    conn.execute("UPDATE citas SET estado = 'Pendiente' WHERE id = ?", (id,))
-    conn.commit()
-    conn.close()
+    cursor = conn.cursor()
+
+    try:
+        # Cambiar el estado de la cita a "Pendiente"
+        cursor.execute("UPDATE citas SET estado = %s WHERE id = %s", ('Pendiente', id))
+        conn.commit()
+    finally:
+        # Cerrar cursor y conexión
+        cursor.close()
+        conn.close()
 
     return "", 204
 
@@ -147,11 +177,19 @@ def guardar_anotacion(id):
     anotacion = request.form.get("anotacion")
     if not anotacion:
         return "La anotación no puede estar vacía", 400
-    
+
     conn = get_db_connection()
-    conn.execute("UPDATE citas SET anotaciones = ? WHERE id = ?", (anotacion, id))
-    conn.commit()
-    conn.close()
+    cursor = conn.cursor()
+
+    try:
+        # Actualizar la anotación en la base de datos
+        cursor.execute("UPDATE citas SET anotaciones = %s WHERE id = %s", (anotacion, id))
+        conn.commit()
+    finally:
+        # Cerrar cursor y conexión
+        cursor.close()
+        conn.close()
+
     return redirect(url_for("vencidas"))
 
 @app.route("/crear-cita", methods=["GET", "POST"])
@@ -185,24 +223,28 @@ def crear_cita():
 
         # Validación del límite de citas por intervalo
         conn = get_db_connection()
-        cursor = conn.execute("""
-            SELECT COUNT(*) AS total
-            FROM citas
-            WHERE fecha = ? AND horario = ?
-        """, (fecha, horario))
-        total_citas = cursor.fetchone()["total"]
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+                SELECT COUNT(*) AS total
+                FROM citas
+                WHERE fecha = %s AND horario = %s
+            """, (fecha, horario))
+            total_citas = cursor.fetchone()["total"]
 
-        if total_citas >= 5:
+            if total_citas >= 5:
+                return render_template("crear_cita.html", error=f"El intervalo {horario} ya tiene el máximo de 5 citas.")
+
+            # Insertar la cita
+            cursor.execute("""
+                INSERT INTO citas (contenedor, chofer_nombre, chofer_cedula, cabezal_placa, fecha, horario, naviera, estado_contenedor, tipo_operacion)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (contenedor, chofer_nombre, chofer_cedula, cabezal_placa, fecha, horario, naviera, estado_contenedor, tipo_operacion))
+            conn.commit()
+        finally:
+            cursor.close()
             conn.close()
-            return render_template("crear_cita.html", error=f"El intervalo {horario} ya tiene el máximo de 5 citas.")
 
-        # Insertar la cita
-        conn.execute("""
-            INSERT INTO citas (contenedor, chofer_nombre, chofer_cedula, cabezal_placa, fecha, horario, naviera, estado_contenedor, tipo_operacion)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (contenedor, chofer_nombre, chofer_cedula, cabezal_placa, fecha, horario, naviera, estado_contenedor, tipo_operacion))
-        conn.commit()
-        conn.close()
         return redirect(url_for("home"))
 
     # Generar horarios dinámicos
@@ -221,73 +263,76 @@ def crear_cita():
 @app.route("/editar-cita/<int:id>", methods=["GET", "POST"])
 def editar_cita(id):
     conn = get_db_connection()
-    cita = conn.execute("SELECT * FROM citas WHERE id = ?", (id,)).fetchone()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT * FROM citas WHERE id = %s", (id,))
+        cita = cursor.fetchone()
 
-    if not cita:
+        if not cita:
+            return render_template("error.html", message="Cita no encontrada.")
+
+        # Generar horarios dinámicos
+        time_slots = [f"{hour:02d}:00-{hour:02d}:15" for hour in range(8, 17)]
+
+        if request.method == "POST":
+            contenedor = request.form.get("contenedor")
+            chofer_nombre = request.form.get("chofer_nombre")
+            chofer_cedula = request.form.get("chofer_cedula")
+            cabezal_placa = request.form.get("cabezal_placa")
+            fecha = request.form.get("fecha")
+            horario = request.form.get("horario")
+            naviera = request.form.get("naviera")
+            estado_contenedor = request.form.get("estado_contenedor")
+            tipo_operacion = request.form.get("tipo_operacion")
+
+            # Validación del contenedor
+            if not re.match(r"^[A-Z]{4}[0-9]{7}$", contenedor):
+                return render_template(
+                    "editar_cita.html", 
+                    cita=cita, 
+                    time_slots=time_slots, 
+                    error="El contenedor debe contener 4 letras seguidas de 7 números (ejemplo: ABCD1234567)"
+                )
+
+            # Validación de la naviera
+            if naviera not in ["COSCO", "ONE", "OOCL"]:
+                return render_template(
+                    "editar_cita.html", 
+                    cita=cita, 
+                    time_slots=time_slots, 
+                    error="La naviera debe ser COSCO, OOCL o ONE"
+                )
+
+            # Validación del estado del contenedor
+            if estado_contenedor not in ["Cargado", "Vacio"]:
+                return render_template(
+                    "editar_cita.html", 
+                    cita=cita, 
+                    time_slots=time_slots, 
+                    error="El estado del contenedor debe ser 'Cargado' o 'Vacio'"
+                )
+
+            # Validación del tipo de operación
+            if tipo_operacion not in ["Retira", "Entrega"]:
+                return render_template(
+                    "editar_cita.html", 
+                    cita=cita, 
+                    time_slots=time_slots, 
+                    error="El tipo de operación debe ser 'Retira' o 'Entrega'"
+                )
+
+            # Actualizar cita
+            cursor.execute("""
+                UPDATE citas
+                SET contenedor = %s, chofer_nombre = %s, chofer_cedula = %s, cabezal_placa = %s, fecha = %s, horario = %s, naviera = %s, estado_contenedor = %s, tipo_operacion = %s
+                WHERE id = %s
+            """, (contenedor, chofer_nombre, chofer_cedula, cabezal_placa, fecha, horario, naviera, estado_contenedor, tipo_operacion, id))
+            conn.commit()
+            return redirect(url_for("home"))
+    finally:
+        cursor.close()
         conn.close()
-        return render_template("error.html", message="Cita no encontrada.")
 
-    # Generar horarios dinámicos
-    time_slots = [f"{hour:02d}:00-{hour:02d}:15" for hour in range(8, 17)]
-
-    if request.method == "POST":
-        contenedor = request.form.get("contenedor")
-        chofer_nombre = request.form.get("chofer_nombre")
-        chofer_cedula = request.form.get("chofer_cedula")
-        cabezal_placa = request.form.get("cabezal_placa")
-        fecha = request.form.get("fecha")
-        horario = request.form.get("horario")
-        naviera = request.form.get("naviera")
-        estado_contenedor = request.form.get("estado_contenedor")
-        tipo_operacion = request.form.get("tipo_operacion")
-
-        # Validación del contenedor
-        if not re.match(r"^[A-Z]{4}[0-9]{7}$", contenedor):
-            return render_template(
-                "editar_cita.html", 
-                cita=cita, 
-                time_slots=time_slots, 
-                error="El contenedor debe contener 4 letras seguidas de 7 números (ejemplo: ABCD1234567)"
-            )
-
-        # Validación de la naviera
-        if naviera not in ["COSCO", "ONE" ,"OOCL" ]:
-            return render_template(
-                "editar_cita.html", 
-                cita=cita, 
-                time_slots=time_slots, 
-                error="La naviera debe ser COSCO, OOCL o ONE"
-            )
-
-        # Validación del estado del contenedor
-        if estado_contenedor not in ["Cargado", "Vacio"]:
-            return render_template(
-                "editar_cita.html", 
-                cita=cita, 
-                time_slots=time_slots, 
-                error="El estado del contenedor debe ser 'Cargado' o 'Vacio'"
-            )
-
-        # Validación del tipo de operación
-        if tipo_operacion not in ["Retira", "Entrega"]:
-            return render_template(
-                "editar_cita.html", 
-                cita=cita, 
-                time_slots=time_slots, 
-                error="El tipo de operación debe ser 'Retira' o 'Entrega'"
-            )
-
-        # Actualizar cita
-        conn.execute("""
-            UPDATE citas
-            SET contenedor = ?, chofer_nombre = ?, chofer_cedula = ?, cabezal_placa = ?, fecha = ?, horario = ?, naviera = ?, estado_contenedor = ?, tipo_operacion = ?
-            WHERE id = ?
-        """, (contenedor, chofer_nombre, chofer_cedula, cabezal_placa, fecha, horario, naviera, estado_contenedor, tipo_operacion, id))
-        conn.commit()
-        conn.close()
-        return redirect(url_for("home"))
-
-    conn.close()
     return render_template("editar_cita.html", cita=cita, time_slots=time_slots)
 
 @app.route("/eliminar-cita/<int:id>", methods=["POST"])
@@ -300,64 +345,90 @@ def eliminar_cita(id):
         return "Código de autorización incorrecto.", 403
 
     # Eliminar la cita de la base de datos
-    with get_db_connection() as conn:
-        cita = conn.execute("SELECT * FROM citas WHERE id = ?", (id,)).fetchone()
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT * FROM citas WHERE id = %s", (id,))
+        cita = cursor.fetchone()
 
         if not cita:
             return "Cita no encontrada.", 404
 
-        conn.execute("DELETE FROM citas WHERE id = ?", (id,))
+        cursor.execute("DELETE FROM citas WHERE id = %s", (id,))
         conn.commit()
-
-    return "Cita eliminada con éxito.", 200
+        return "Cita eliminada con éxito.", 200
+    finally:
+        cursor.close()
+        conn.close()
 
 @app.route("/completar-cita/<int:id>", methods=["POST"])
 def completar_cita(id):
-    with get_db_connection() as conn:
-        cita = conn.execute("SELECT * FROM citas WHERE id = ?", (id,)).fetchone()
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        # Verificar si la cita existe
+        cursor.execute("SELECT * FROM citas WHERE id = %s", (id,))
+        cita = cursor.fetchone()
         if not cita:
             return render_template("error.html", message="Cita no encontrada.")
 
+        # Verificar si la cita está pendiente
         if cita["estado"] != "Pendiente":
             return render_template("error.html", message="Solo se pueden completar citas pendientes.")
 
-        # Cambiar estado de la cita
-        conn.execute("UPDATE citas SET estado = 'Completada' WHERE id = ?", (id,))
+        # Cambiar el estado de la cita a "Completada"
+        cursor.execute("UPDATE citas SET estado = 'Completada' WHERE id = %s", (id,))
         conn.commit()
+    finally:
+        cursor.close()
+        conn.close()
 
     return redirect(url_for("home"))
 
 @app.route("/generar-pdf/<int:cita_id>")
 def generar_pdf(cita_id):
     conn = get_db_connection()
-    cita = conn.execute("SELECT * FROM citas WHERE id = ?", (cita_id,)).fetchone()
-    conn.close()
+    cursor = conn.cursor()
+    try:
+        # Obtener los detalles de la cita
+        cursor.execute("SELECT * FROM citas WHERE id = %s", (cita_id,))
+        cita = cursor.fetchone()
 
-    pdf = PDF()
-    pdf.add_page()
-    pdf.set_font("Arial", size=12)
+        if not cita:
+            return render_template("error.html", message="Cita no encontrada.")
 
-    pdf.cell(200, 10, txt="Detalles de la Cita", ln=True, align="C")
-    pdf.ln(10)
+        # Crear el PDF
+        pdf = PDF()
+        pdf.add_page()
+        pdf.set_font("Arial", size=12)
 
-    pdf.cell(0, 10, f"Contenedor: {cita['contenedor']}", ln=True)
-    pdf.cell(0, 10, f"Chofer: {cita['chofer_nombre']}", ln=True)
-    pdf.cell(0, 10, f"Cédula: {cita['chofer_cedula']}", ln=True)
-    pdf.cell(0, 10, f"Placa: {cita['cabezal_placa']}", ln=True)
-    pdf.cell(0, 10, f"Naviera: {cita['naviera']}", ln=True)
-    pdf.cell(0, 10, f"Estado del Contenedor: {cita['estado_contenedor']}", ln=True)  # Nuevo campo
-    pdf.cell(0, 10, f"Tipo de Operación: {cita['tipo_operacion']}", ln=True)        # Nuevo campo
-    pdf.cell(0, 10, f"Fecha: {cita['fecha']}", ln=True)
-    pdf.cell(0, 10, f"Horario: {cita['horario']}", ln=True)
+        pdf.cell(200, 10, txt="Detalles de la Cita", ln=True, align="C")
+        pdf.ln(10)
 
-    pdf_path = os.path.join("static", f"cita_{cita_id}.pdf")
-    pdf.output(pdf_path)
+        pdf.cell(0, 10, f"Contenedor: {cita['contenedor']}", ln=True)
+        pdf.cell(0, 10, f"Chofer: {cita['chofer_nombre']}", ln=True)
+        pdf.cell(0, 10, f"Cédula: {cita['chofer_cedula']}", ln=True)
+        pdf.cell(0, 10, f"Placa: {cita['cabezal_placa']}", ln=True)
+        pdf.cell(0, 10, f"Naviera: {cita['naviera']}", ln=True)
+        pdf.cell(0, 10, f"Estado del Contenedor: {cita['estado_contenedor']}", ln=True)
+        pdf.cell(0, 10, f"Tipo de Operación: {cita['tipo_operacion']}", ln=True)
+        pdf.cell(0, 10, f"Fecha: {cita['fecha']}", ln=True)
+        pdf.cell(0, 10, f"Horario: {cita['horario']}", ln=True)
 
+        # Guardar el PDF en el directorio estático
+        pdf_path = os.path.join("static", f"cita_{cita_id}.pdf")
+        pdf.output(pdf_path)
+    finally:
+        cursor.close()
+        conn.close()
+
+    # Enviar el archivo PDF como descarga
     return send_file(pdf_path, as_attachment=True)
 
 @app.route('/dashboard', methods=['GET'])
 def dashboard():
     conn = get_db_connection()
+    cursor = conn.cursor()
 
     # Obtener valores de filtros desde la solicitud
     fecha = request.args.get('fecha', '')
@@ -372,40 +443,47 @@ def dashboard():
     params = []
 
     if fecha:
-        query += " AND fecha = ?"
+        query += " AND fecha = %s"
         params.append(fecha)
     if naviera:
-        query += " AND naviera = ?"
+        query += " AND naviera = %s"
         params.append(naviera)
     if tipo_operacion:
-        query += " AND tipo_operacion = ?"
+        query += " AND tipo_operacion = %s"
         params.append(tipo_operacion)
     if horario:
-        query += " AND horario = ?"
+        query += " AND horario = %s"
         params.append(horario)
     if estado:
-        query += " AND estado = ?"
+        query += " AND estado = %s"
         params.append(estado)
     if estado_contenedor:  # Aplica el nuevo filtro
-        query += " AND estado_contenedor = ?"
+        query += " AND estado_contenedor = %s"
         params.append(estado_contenedor)
 
     # Ejecutar la consulta con filtros
-    citas_filtradas = conn.execute(query, params).fetchall()
+    cursor.execute(query, params)
+    citas_filtradas = cursor.fetchall()
 
     # Estadísticas generales
-    total_citas = conn.execute("SELECT COUNT(*) AS total FROM citas").fetchone()["total"]
-    citas_por_estado = conn.execute("""
+    cursor.execute("SELECT COUNT(*) AS total FROM citas")
+    total_citas = cursor.fetchone()["total"]
+
+    cursor.execute("""
         SELECT estado_contenedor, COUNT(*) AS total
         FROM citas
         GROUP BY estado_contenedor
-    """).fetchall()
-    horarios = conn.execute("""
+    """)
+    citas_por_estado = cursor.fetchall()
+
+    cursor.execute("""
         SELECT DISTINCT horario
         FROM citas
         ORDER BY horario ASC
-    """).fetchall()
+    """)
+    horarios = cursor.fetchall()
 
+    cursor.close()
     conn.close()
 
     # Renderizar el template con los datos
@@ -424,10 +502,10 @@ def dashboard():
             "estado_contenedor": estado_contenedor,  # Pasa el nuevo filtro al template
         }
     )
-
 @app.route("/exportar-estadisticas")
 def exportar_estadisticas():
     conn = get_db_connection()
+    cursor = conn.cursor()
 
     # Recibir parámetros de filtro desde el formulario
     filtro_fecha = request.args.get("fecha")
@@ -445,24 +523,26 @@ def exportar_estadisticas():
     params = []
 
     if filtro_fecha:
-        query += " AND fecha = ?"
+        query += " AND fecha = %s"
         params.append(filtro_fecha)
     if filtro_naviera:
-        query += " AND naviera = ?"
+        query += " AND naviera = %s"
         params.append(filtro_naviera)
     if filtro_tipo_operacion:
-        query += " AND tipo_operacion = ?"
+        query += " AND tipo_operacion = %s"
         params.append(filtro_tipo_operacion)
     if filtro_horario:
-        query += " AND horario = ?"
+        query += " AND horario = %s"
         params.append(filtro_horario)
     if filtro_estado_contenedor:  # Aplica el nuevo filtro
-        query += " AND estado_contenedor = ?"
+        query += " AND estado_contenedor = %s"
         params.append(filtro_estado_contenedor)
 
     # Ejecutar consulta
-    citas_filtradas = conn.execute(query, params).fetchall()
+    cursor.execute(query, params)
+    citas_filtradas = cursor.fetchall()
 
+    cursor.close()
     conn.close()
 
     # Crear el archivo Excel
@@ -488,6 +568,7 @@ def exportar_estadisticas():
 @app.route("/exportar-citas", methods=["GET"])
 def exportar_citas():
     conn = get_db_connection()
+    cursor = conn.cursor()
 
     # Recuperar los filtros de la solicitud GET
     fecha = request.args.get('fecha', '')
@@ -505,23 +586,24 @@ def exportar_citas():
     params = []
 
     if fecha:
-        query += " AND fecha = ?"
+        query += " AND fecha = %s"
         params.append(fecha)
     if naviera:
-        query += " AND naviera = ?"
+        query += " AND naviera = %s"
         params.append(naviera)
     if tipo_operacion:
-        query += " AND tipo_operacion = ?"
+        query += " AND tipo_operacion = %s"
         params.append(tipo_operacion)
     if horario:
-        query += " AND horario = ?"
+        query += " AND horario = %s"
         params.append(horario)
     if estado_contenedor:  # Aplica el nuevo filtro
-        query += " AND estado_contenedor = ?"
+        query += " AND estado_contenedor = %s"
         params.append(estado_contenedor)
 
     # Ejecutar la consulta
-    citas = conn.execute(query, params).fetchall()
+    cursor.execute(query, params)
+    citas = cursor.fetchall()
 
     # Crear el archivo Excel
     wb = Workbook()
@@ -541,18 +623,21 @@ def exportar_citas():
     file_path = "citas_filtradas.xlsx"
     wb.save(file_path)
 
+    cursor.close()
     conn.close()
     return send_file(file_path, as_attachment=True, download_name="citas_filtradas.xlsx")
 
 @app.route("/exportar-todas-citas", methods=["GET"])
 def exportar_todas_citas():
     conn = get_db_connection()
+    cursor = conn.cursor()
 
     # Obtener todas las citas de la base de datos
-    citas = conn.execute("""
+    cursor.execute("""
         SELECT id, contenedor, chofer_nombre, chofer_cedula, cabezal_placa, naviera, estado_contenedor, tipo_operacion, fecha, horario, estado
         FROM citas
-    """).fetchall()
+    """)
+    citas = cursor.fetchall()
 
     # Crear archivo Excel
     wb = Workbook()
@@ -576,6 +661,9 @@ def exportar_todas_citas():
     # Guardar archivo en memoria temporal
     file_path = "todas_citas.xlsx"
     wb.save(file_path)
+
+    # Cerrar cursor y conexión
+    cursor.close()
     conn.close()
 
     # Enviar el archivo Excel al usuario
