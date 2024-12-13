@@ -272,7 +272,14 @@ def editar_cita(id):
             return render_template("error.html", message="Cita no encontrada.")
 
         # Generar horarios dinámicos
-        time_slots = [f"{hour:02d}:00-{hour:02d}:15" for hour in range(8, 17)]
+        time_slots = []
+        for hour in range(8, 17):  # Desde las 8:00 hasta las 17:00
+            time_slots.extend([
+                f"{hour:02d}:00-{hour:02d}:15",
+                f"{hour:02d}:15-{hour:02d}:30",
+                f"{hour:02d}:30-{hour:02d}:45",
+                f"{hour:02d}:45-{(hour + 1):02d}:00"
+            ])
 
         if request.method == "POST":
             contenedor = request.form.get("contenedor")
@@ -334,6 +341,7 @@ def editar_cita(id):
         conn.close()
 
     return render_template("editar_cita.html", cita=cita, time_slots=time_slots)
+
 
 @app.route("/eliminar-cita/<int:id>", methods=["POST"])
 def eliminar_cita(id):

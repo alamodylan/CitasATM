@@ -84,7 +84,7 @@
             const codigo = document.getElementById("codigo_autorizacion_revertir").value;
             const errorDiv = document.getElementById("revertirError");
 
-            if (codigo === "12345") {
+            if (codigo === "atm7410") {
                 errorDiv.style.display = "none";
                 fetch(`/revertir-cita/${citaIdToRevert}`, {
                     method: 'POST',

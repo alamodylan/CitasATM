@@ -122,7 +122,7 @@
             const codigo = document.getElementById("codigo_autorizacion_eliminar").value;
             const errorDiv = document.getElementById("eliminarError");
 
-            if (codigo === "12345") {
+            if (codigo === "atm7410") {
                 errorDiv.style.display = "none";
                 fetch(`/eliminar-cita/${citaIdToDelete}`, {
                     method: 'POST',
@@ -161,7 +161,7 @@
             const codigo = document.getElementById("codigo_autorizacion_editar").value;
             const errorDiv = document.getElementById("editarError");
     
-            if (codigo === "12345") { // Cambia "12345" por la clave correcta
+            if (codigo === "atm7410") { // Cambia "12345" por la clave correcta
                 errorDiv.style.display = "none";
                 window.location.href = `/editar-cita/${citaIdToEdit}`; // Redirigir a la edición de la cita
             } else {
