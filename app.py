@@ -175,7 +175,10 @@ def revertir_cita(id):
 @app.route("/guardar-anotacion/<int:id>", methods=["POST"])
 def guardar_anotacion(id):
     anotacion = request.form.get("anotacion")
+    print(f"Anotación recibida: {anotacion}")  # Para verificar qué se está recibiendo
+
     if not anotacion:
+        print("Anotación vacía, retornando error")
         return "La anotación no puede estar vacía", 400
 
     conn = get_db_connection()
@@ -185,6 +188,10 @@ def guardar_anotacion(id):
         # Actualizar la anotación en la base de datos
         cursor.execute("UPDATE citas SET anotaciones = %s WHERE id = %s", (anotacion, id))
         conn.commit()
+        print("Anotación guardada correctamente")
+    except Exception as e:
+        print(f"Error al guardar la anotación: {e}")
+        return "Error al guardar la anotación", 500
     finally:
         # Cerrar cursor y conexión
         cursor.close()
