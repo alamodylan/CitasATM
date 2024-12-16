@@ -153,6 +153,7 @@ def completadas():
 def revertir_cita(id):
     codigo_autorizacion = request.json.get("codigo_autorizacion")
 
+
     # Validar el código de autorización
     if codigo_autorizacion != "atm7410":
         return "Código de autorización incorrecto.", 403
@@ -355,7 +356,7 @@ def eliminar_cita(id):
     codigo_autorizacion = data.get("codigo_autorizacion")
 
     # Verificar el código de autorización
-    if codigo_autorizacion != "12345":
+    if codigo_autorizacion != "atm7410":
         return "Código de autorización incorrecto.", 403
 
     # Eliminar la cita de la base de datos
