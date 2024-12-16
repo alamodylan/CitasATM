@@ -9,7 +9,6 @@ from flask import send_file
 from flask import jsonify, render_template
 from io import BytesIO
 from openpyxl import Workbook
-import sqlite3
 import psycopg2 
 from psycopg2 import connect
 from psycopg2.extras import RealDictCursor
@@ -27,7 +26,7 @@ class PDF(FPDF):
     def header(self):
         self.image('static/LogoAlamo.png', 10, 8, 33) 
         self.set_font('Arial', 'B', 12)
-        self.cell(0, 10, 'Álamo Terminales Marítimos - Detalle de Cita', border=False, ln=True, align='C')
+        self.cell(0, 10, 'Alamo Terminales Marítimos - Detalle de Cita', border=False, ln=True, align='C')
         self.ln(20) 
 
     def footer(self):
@@ -155,7 +154,7 @@ def revertir_cita(id):
     codigo_autorizacion = request.json.get("codigo_autorizacion")
 
     # Validar el código de autorización
-    if codigo_autorizacion != "12345":
+    if codigo_autorizacion != "atm7410":
         return "Código de autorización incorrecto.", 403
 
     conn = get_db_connection()
@@ -683,6 +682,8 @@ def exportar_todas_citas():
 
     # Enviar el archivo Excel al usuario
     return send_file(file_path, as_attachment=True, download_name="listado_citas_completo.xlsx")
+DATABASE_URL = "postgresql://citasatm_user:SlwK1sFIPJal7m8KaDtlRlYu1NseKxnV@dpg-ctdis2jv2p9s73ai7op0-a.oregon-postgres.render.com/citasatm_db"
+
 
 
 if __name__ == "__main__":
