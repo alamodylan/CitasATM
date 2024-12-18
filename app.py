@@ -671,58 +671,57 @@ def exportar_todas_citas():
     # Enviar el archivo Excel al usuario
     return send_file(file_path, as_attachment=True, download_name="listado_citas_completo.xlsx")
 DATABASE_URL = "postgresql://citasatm_user:SlwK1sFIPJal7m8KaDtlRlYu1NseKxnV@dpg-ctdis2jv2p9s73ai7op0-a.oregon-postgres.render.com/citasatm_db"
-@app.route("/subir-fotos/<int:id>", methods=["GET", "POST"])
+
+@app.route("/subir-fotos/<int:id>", methods=["POST"])
 def subir_fotos(id):
     if request.method == "POST":
-        foto1 = request.files.get("foto1")
-        foto2 = request.files.get("foto2")
-        foto3 = request.files.get("foto3")
-
-        # Verificar y crear el directorio de fotos si no existe
-        foto_dir = os.path.join("static", "fotos")
-        if not os.path.exists(foto_dir):
-            os.makedirs(foto_dir)
-
+        fotos_subidas = {"foto1": None, "foto2": None, "foto3": None}
+        for key in fotos_subidas.keys():
+            foto = request.files.get(key)
+            if foto:
+                ruta_foto = f"static/fotos/cita_{id}_{key}.jpg"
+                try:
+                    foto.save(ruta_foto)
+                    fotos_subidas[key] = ruta_foto
+                except Exception as e:
+                    print(f"Error al guardar {key}: {e}")
+        
         conn = get_db_connection()
         cursor = conn.cursor()
-
         try:
-            # Guardar las fotos y actualizar las rutas en la base de datos
-            if foto1:
-                ruta_foto1 = f"{foto_dir}/cita_{id}_foto1.jpg"
-                foto1.save(ruta_foto1)
-                cursor.execute("UPDATE citas SET foto1 = %s WHERE id = %s", (ruta_foto1, id))
-            if foto2:
-                ruta_foto2 = f"{foto_dir}/cita_{id}_foto2.jpg"
-                foto2.save(ruta_foto2)
-                cursor.execute("UPDATE citas SET foto2 = %s WHERE id = %s", (ruta_foto2, id))
-            if foto3:
-                ruta_foto3 = f"{foto_dir}/cita_{id}_foto3.jpg"
-                foto3.save(ruta_foto3)
-                cursor.execute("UPDATE citas SET foto3 = %s WHERE id = %s", (ruta_foto3, id))
-
+            # Actualizar las rutas en la base de datos
+            for key, ruta in fotos_subidas.items():
+                if ruta:
+                    cursor.execute(f"UPDATE citas SET {key} = %s WHERE id = %s", (ruta, id))
             conn.commit()
+        except Exception as e:
+            print(f"Error al actualizar la base de datos: {e}")
         finally:
             cursor.close()
             conn.close()
 
         return redirect(url_for("completadas"))
-
-    return render_template("subir_fotos.html", cita_id=id)
 @app.route("/ver-fotos/<int:id>")
 def ver_fotos(id):
     conn = get_db_connection()
     cursor = conn.cursor()
 
     try:
+        # Recuperar las fotos desde la base de datos
         cursor.execute("SELECT foto1, foto2, foto3 FROM citas WHERE id = %s", (id,))
         fotos = cursor.fetchone()
+        if fotos:
+            # Devuelve solo las rutas existentes
+            fotos_list = [foto for foto in fotos if foto]
+        else:
+            fotos_list = []
+
     finally:
         cursor.close()
         conn.close()
 
-    fotos = [foto for foto in fotos if foto]  # Filtra las fotos que no son None
-    return jsonify({"fotos": fotos})
+    # Responder con las fotos en formato JSON
+    return jsonify({"fotos": fotos_list})
 
 
 
