@@ -12,11 +12,12 @@
             <a href="/" class="btn btn-info">Inicio</a>
         </div>
         <h1 class="text-center">Citas Completadas</h1>
+        <a href="/vencidas" class="btn btn-danger mb-3">Ver Citas Vencidas</a>
         <table class="table table-striped">
             <thead>
                 <tr>
                     <th>#</th>
-                    <th>Contenedor o BK</th>
+                    <th>Contenedor</th>
                     <th>Chofer</th>
                     <th>Cédula</th>
                     <th>Placa</th>
@@ -38,7 +39,10 @@
                     <td>{{ cita['fecha'] }}</td>
                     <td>{{ cita['horario'] }}</td>
                     <td>
+                        <a href="/generar-pdf/{{ cita['id'] }}" class="btn btn-secondary btn-sm">Descargar PDF</a>
                         <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#codigoModalRevertir" data-id="{{ cita['id'] }}">Regresar a Pendientes</button>
+                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalSubirFotos" data-id="{{ cita['id'] }}">Subir Fotos</button>
+                        <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalVerFotos" data-id="{{ cita['id'] }}">Ver Fotos</button>
                     </td>
                 </tr>
                 {% endfor %}
@@ -46,7 +50,7 @@
         </table>
     </div>
 
-    <!-- Modal para solicitar código de autorización -->
+    <!-- Modal para regresar a pendientes -->
     <div class="modal fade" id="codigoModalRevertir" tabindex="-1" aria-labelledby="codigoModalRevertirLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -55,9 +59,9 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p>Introduce el código de autorización para regresar esta cita a pendientes:</p>
+                    <p>Introduce el código de autorización:</p>
                     <input type="password" id="codigo_autorizacion_revertir" class="form-control" placeholder="Código" required>
-                    <div id="revertirError" class="text-danger mt-2" style="display: none;">Código de autorización incorrecto.</div>
+                    <div id="revertirError" class="text-danger mt-2" style="display: none;">Código incorrecto.</div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -67,51 +71,125 @@
         </div>
     </div>
 
+    <!-- Modal para subir fotos -->
+    <div class="modal fade" id="modalSubirFotos" tabindex="-1" aria-labelledby="modalSubirFotosLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalSubirFotosLabel">Subir Fotos</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="formSubirFotos" action="" method="POST" enctype="multipart/form-data">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="foto1" class="form-label">Foto 1</label>
+                            <input type="file" class="form-control" name="foto1" accept="image/*">
+                        </div>
+                        <div class="mb-3">
+                            <label for="foto2" class="form-label">Foto 2</label>
+                            <input type="file" class="form-control" name="foto2" accept="image/*">
+                        </div>
+                        <div class="mb-3">
+                            <label for="foto3" class="form-label">Foto 3</label>
+                            <input type="file" class="form-control" name="foto3" accept="image/*">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar Fotos</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para ver fotos -->
+    <div class="modal fade" id="modalVerFotos" tabindex="-1" aria-labelledby="modalVerFotosLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalVerFotosLabel">Fotos de la Cita</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <div id="fotosContainer"></div>
+                    <p class="text-muted mt-3" id="noFotosMsg" style="display: none;">No hay fotos disponibles para esta cita.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         let citaId = null;
 
-        // Asignar el ID de la cita al abrir el modal
-        document.getElementById('codigoModalRevertir').addEventListener('show.bs.modal', function (event) {
+        // Asignar el ID de la cita para subir fotos
+        document.getElementById('modalSubirFotos').addEventListener('show.bs.modal', function (event) {
             const button = event.relatedTarget;
             citaId = button.getAttribute('data-id');
+            const form = document.getElementById('formSubirFotos');
+            form.action = `/subir-fotos/${citaId}`;
         });
 
-        // Validar código de autorización y enviar solicitud
-        function validarCodigoRevertir() {
-            const codigo = document.getElementById("codigo_autorizacion_revertir").value;
-            const errorDiv = document.getElementById("revertirError");
+        // Asignar el ID de la cita para ver fotos
+        document.getElementById('modalVerFotos').addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            citaId = button.getAttribute('data-id');
+            fetch(`/ver-fotos/${citaId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('fotosContainer');
+                    container.innerHTML = '';
+                    const noFotosMsg = document.getElementById('noFotosMsg');
 
-            if (codigo === "atm7410") {
-                errorDiv.style.display = "none";
-                fetch(`/revertir-cita/${citaId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ codigo_autorizacion: codigo })
-                })
-                .then(response => {
-                    if (response.ok) {
-                        location.reload();
-                    } else {
-                        response.text().then(text => {
-                            errorDiv.textContent = text;
-                            errorDiv.style.display = "block";
+                    if (data.fotos.length > 0) {
+                        noFotosMsg.style.display = 'none';
+                        data.fotos.forEach(foto => {
+                            const img = document.createElement('img');
+                            img.src = foto;
+                            img.classList.add('img-thumbnail', 'm-2');
+                            img.style.maxWidth = '200px';
+                            container.appendChild(img);
                         });
+                    } else {
+                        noFotosMsg.style.display = 'block';
                     }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    errorDiv.textContent = "Ocurrió un error al intentar regresar la cita a pendientes.";
+                });
+        });
+
+        function validarCodigoRevertir() {
+    const codigo = document.getElementById("codigo_autorizacion_revertir").value;
+    const errorDiv = document.getElementById("revertirError");
+
+    if (codigo === "atm7410") {
+        errorDiv.style.display = "none";
+        fetch(`/revertir-cita/${citaId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ codigo_autorizacion: codigo })
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                response.text().then(text => {
+                    errorDiv.textContent = text;
                     errorDiv.style.display = "block";
                 });
-            } else {
-                errorDiv.textContent = "Código de autorización incorrecto.";
-                errorDiv.style.display = "block";
             }
-        }
-    </script>
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            errorDiv.textContent = "Ocurrió un error al intentar regresar la cita a pendientes.";
+            errorDiv.style.display = "block";
+        });
+    } else {
+        errorDiv.textContent = "Código de autorización incorrecto.";
+        errorDiv.style.display = "block";
+    }
+}
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
