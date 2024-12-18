@@ -678,21 +678,26 @@ def subir_fotos(id):
         foto2 = request.files.get("foto2")
         foto3 = request.files.get("foto3")
 
+        # Verificar que la carpeta exista, si no, crearla
+        folder_path = "static/fotos"
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+
         conn = get_db_connection()
         cursor = conn.cursor()
 
         try:
             # Guardar las fotos en la carpeta estática y actualizar las rutas en la base de datos
             if foto1:
-                ruta_foto1 = f"static/fotos/cita_{id}_foto1.jpg"
+                ruta_foto1 = f"{folder_path}/cita_{id}_foto1.jpg"
                 foto1.save(ruta_foto1)
                 cursor.execute("UPDATE citas SET foto1 = %s WHERE id = %s", (ruta_foto1, id))
             if foto2:
-                ruta_foto2 = f"static/fotos/cita_{id}_foto2.jpg"
+                ruta_foto2 = f"{folder_path}/cita_{id}_foto2.jpg"
                 foto2.save(ruta_foto2)
                 cursor.execute("UPDATE citas SET foto2 = %s WHERE id = %s", (ruta_foto2, id))
             if foto3:
-                ruta_foto3 = f"static/fotos/cita_{id}_foto3.jpg"
+                ruta_foto3 = f"{folder_path}/cita_{id}_foto3.jpg"
                 foto3.save(ruta_foto3)
                 cursor.execute("UPDATE citas SET foto3 = %s WHERE id = %s", (ruta_foto3, id))
 
