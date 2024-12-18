@@ -19,8 +19,8 @@
 
         <form method="POST" action="/editar-cita/{{ cita['id'] }}">
             <div class="mb-3">
-                <label for="contenedor" class="form-label">Contenedor</label>
-                <input type="text" id="contenedor" name="contenedor" class="form-control" value="{{ cita['contenedor'] }}" required pattern="[A-Z]{4}[0-9]{7}" title="Debe contener 4 letras seguidas de 7 números (ejemplo: ABCD1234567)">
+                <label for="contenedor" class="form-label">Contenedor o Bk</label>
+                <input type="text" id="contenedor" name="contenedor" class="form-control" value="{{ cita['contenedor'] }}" required> 
             </div>
             <div class="mb-3">
                 <label for="chofer_nombre" class="form-label">Nombre del Chofer</label>

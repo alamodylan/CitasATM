@@ -212,10 +212,6 @@ def crear_cita():
         estado_contenedor = request.form["estado_contenedor"]
         tipo_operacion = request.form["tipo_operacion"]
 
-        # Validación del contenedor
-        if not re.match(r"^[A-Z]{4}[0-9]{7}$", contenedor):
-            return render_template("crear_cita.html", error="El contenedor debe contener 4 letras seguidas de 7 números (ejemplo: ABCD1234567)")
-
         # Validación de la naviera
         if naviera not in ["COSCO", "ONE", "OOCL"]:
             return render_template("crear_cita.html", error="La naviera debe ser COSCO, OOCL o ONE")
@@ -298,15 +294,6 @@ def editar_cita(id):
             naviera = request.form.get("naviera")
             estado_contenedor = request.form.get("estado_contenedor")
             tipo_operacion = request.form.get("tipo_operacion")
-
-            # Validación del contenedor
-            if not re.match(r"^[A-Z]{4}[0-9]{7}$", contenedor):
-                return render_template(
-                    "editar_cita.html", 
-                    cita=cita, 
-                    time_slots=time_slots, 
-                    error="El contenedor debe contener 4 letras seguidas de 7 números (ejemplo: ABCD1234567)"
-                )
 
             # Validación de la naviera
             if naviera not in ["COSCO", "ONE", "OOCL"]:
@@ -420,7 +407,7 @@ def generar_pdf(cita_id):
         pdf.cell(200, 10, txt="Detalles de la Cita", ln=True, align="C")
         pdf.ln(10)
 
-        pdf.cell(0, 10, f"Contenedor: {cita['contenedor']}", ln=True)
+        pdf.cell(0, 10, f"Contenedor o BK: {cita['Contenedor o BK']}", ln=True)
         pdf.cell(0, 10, f"Chofer: {cita['chofer_nombre']}", ln=True)
         pdf.cell(0, 10, f"Cédula: {cita['chofer_cedula']}", ln=True)
         pdf.cell(0, 10, f"Placa: {cita['cabezal_placa']}", ln=True)
@@ -566,7 +553,7 @@ def exportar_estadisticas():
     ws.title = "Estadísticas Filtradas"
 
     # Encabezados
-    ws.append(["ID", "Contenedor", "Chofer", "Naviera", "Estado Contenedor", "Tipo Operación", "Horario", "Fecha"])
+    ws.append(["ID", "Contenedor o BK", "Chofer", "Naviera", "Estado Contenedor", "Tipo Operación", "Horario", "Fecha"])
     for cita in citas_filtradas:
         ws.append([
             cita["id"], cita["contenedor"], cita["chofer_nombre"], cita["naviera"],
@@ -661,7 +648,7 @@ def exportar_todas_citas():
 
     # Encabezados
     ws.append([
-        "ID", "Contenedor", "Nombre del Chofer", "Cédula del Chofer", "Placa del Cabezal", 
+        "ID", "Contenedor o BK", "Nombre del Chofer", "Cédula del Chofer", "Placa del Cabezal", 
         "Naviera", "Estado del Contenedor", "Tipo de Operación", "Fecha", "Horario", "Estado"
     ])
 
