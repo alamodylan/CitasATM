@@ -671,6 +671,51 @@ def exportar_todas_citas():
     # Enviar el archivo Excel al usuario
     return send_file(file_path, as_attachment=True, download_name="listado_citas_completo.xlsx")
 DATABASE_URL = "postgresql://citasatm_user:SlwK1sFIPJal7m8KaDtlRlYu1NseKxnV@dpg-ctdis2jv2p9s73ai7op0-a.oregon-postgres.render.com/citasatm_db"
+@app.route("/subir-fotos/<int:id>", methods=["GET", "POST"])
+def subir_fotos(id):
+    if request.method == "POST":
+        foto1 = request.files.get("foto1")
+        foto2 = request.files.get("foto2")
+        foto3 = request.files.get("foto3")
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        try:
+            # Guardar las fotos en la carpeta estática y actualizar las rutas en la base de datos
+            if foto1:
+                ruta_foto1 = f"static/fotos/cita_{id}_foto1.jpg"
+                foto1.save(ruta_foto1)
+                cursor.execute("UPDATE citas SET foto1 = %s WHERE id = %s", (ruta_foto1, id))
+            if foto2:
+                ruta_foto2 = f"static/fotos/cita_{id}_foto2.jpg"
+                foto2.save(ruta_foto2)
+                cursor.execute("UPDATE citas SET foto2 = %s WHERE id = %s", (ruta_foto2, id))
+            if foto3:
+                ruta_foto3 = f"static/fotos/cita_{id}_foto3.jpg"
+                foto3.save(ruta_foto3)
+                cursor.execute("UPDATE citas SET foto3 = %s WHERE id = %s", (ruta_foto3, id))
+
+            conn.commit()
+        finally:
+            cursor.close()
+            conn.close()
+
+        return redirect(url_for("completadas"))
+    return render_template("subir_fotos.html", cita_id=id)
+@app.route("/ver-fotos/<int:id>")
+def ver_fotos(id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("SELECT foto1, foto2, foto3 FROM citas WHERE id = %s", (id,))
+        fotos = cursor.fetchone()
+    finally:
+        cursor.close()
+        conn.close()
+
+    return render_template("ver_fotos.html", fotos=fotos)
 
 
 
