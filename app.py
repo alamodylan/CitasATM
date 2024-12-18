@@ -391,40 +391,40 @@ def completar_cita(id):
 def generar_pdf(cita_id):
     conn = get_db_connection()
     cursor = conn.cursor()
+
     try:
-        # Obtener los detalles de la cita
         cursor.execute("SELECT * FROM citas WHERE id = %s", (cita_id,))
         cita = cursor.fetchone()
-
-        if not cita:
-            return render_template("error.html", message="Cita no encontrada.")
-
-        # Crear el PDF
-        pdf = PDF()
-        pdf.add_page()
-        pdf.set_font("Arial", size=12)
-
-        pdf.cell(200, 10, txt="Detalles de la Cita", ln=True, align="C")
-        pdf.ln(10)
-
-        pdf.cell(0, 10, f"Contenedor o BK: {cita['Contenedor o BK']}", ln=True)
-        pdf.cell(0, 10, f"Chofer: {cita['chofer_nombre']}", ln=True)
-        pdf.cell(0, 10, f"Cédula: {cita['chofer_cedula']}", ln=True)
-        pdf.cell(0, 10, f"Placa: {cita['cabezal_placa']}", ln=True)
-        pdf.cell(0, 10, f"Naviera: {cita['naviera']}", ln=True)
-        pdf.cell(0, 10, f"Estado del Contenedor: {cita['estado_contenedor']}", ln=True)
-        pdf.cell(0, 10, f"Tipo de Operación: {cita['tipo_operacion']}", ln=True)
-        pdf.cell(0, 10, f"Fecha: {cita['fecha']}", ln=True)
-        pdf.cell(0, 10, f"Horario: {cita['horario']}", ln=True)
-
-        # Guardar el PDF en el directorio estático
-        pdf_path = os.path.join("static", f"cita_{cita_id}.pdf")
-        pdf.output(pdf_path)
     finally:
         cursor.close()
         conn.close()
 
-    # Enviar el archivo PDF como descarga
+    pdf = PDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+
+    # Datos de la cita
+    pdf.cell(200, 10, txt="Detalles de la Cita", ln=True, align="C")
+    pdf.ln(10)
+    pdf.cell(0, 10, f"Contenedor o BK: {cita['contenedor']}", ln=True)
+    pdf.cell(0, 10, f"Chofer: {cita['chofer_nombre']}", ln=True)
+    pdf.cell(0, 10, f"Cédula: {cita['chofer_cedula']}", ln=True)
+    pdf.cell(0, 10, f"Placa: {cita['cabezal_placa']}", ln=True)
+    pdf.cell(0, 10, f"Naviera: {cita['naviera']}", ln=True)
+    pdf.cell(0, 10, f"Estado: {cita['estado_contenedor']}", ln=True)
+    pdf.cell(0, 10, f"Tipo de Operación: {cita['tipo_operacion']}", ln=True)
+    pdf.cell(0, 10, f"Fecha: {cita['fecha']}", ln=True)
+    pdf.cell(0, 10, f"Horario: {cita['horario']}", ln=True)
+
+    # Agregar fotos al PDF
+    fotos = [cita['foto1'], cita['foto2'], cita['foto3']]
+    for foto in fotos:
+        if foto and os.path.exists(foto):  # Verifica que la foto exista
+            pdf.image(foto, x=10, y=None, w=100)
+
+    pdf_path = os.path.join("static", f"cita_{cita_id}.pdf")
+    pdf.output(pdf_path)
+
     return send_file(pdf_path, as_attachment=True)
 
 @app.route('/dashboard', methods=['GET'])
@@ -678,26 +678,26 @@ def subir_fotos(id):
         foto2 = request.files.get("foto2")
         foto3 = request.files.get("foto3")
 
-        # Verificar que la carpeta exista, si no, crearla
-        folder_path = "static/fotos"
-        if not os.path.exists(folder_path):
-            os.makedirs(folder_path)
+        # Verificar y crear el directorio de fotos si no existe
+        foto_dir = os.path.join("static", "fotos")
+        if not os.path.exists(foto_dir):
+            os.makedirs(foto_dir)
 
         conn = get_db_connection()
         cursor = conn.cursor()
 
         try:
-            # Guardar las fotos en la carpeta estática y actualizar las rutas en la base de datos
+            # Guardar las fotos y actualizar las rutas en la base de datos
             if foto1:
-                ruta_foto1 = f"{folder_path}/cita_{id}_foto1.jpg"
+                ruta_foto1 = f"{foto_dir}/cita_{id}_foto1.jpg"
                 foto1.save(ruta_foto1)
                 cursor.execute("UPDATE citas SET foto1 = %s WHERE id = %s", (ruta_foto1, id))
             if foto2:
-                ruta_foto2 = f"{folder_path}/cita_{id}_foto2.jpg"
+                ruta_foto2 = f"{foto_dir}/cita_{id}_foto2.jpg"
                 foto2.save(ruta_foto2)
                 cursor.execute("UPDATE citas SET foto2 = %s WHERE id = %s", (ruta_foto2, id))
             if foto3:
-                ruta_foto3 = f"{folder_path}/cita_{id}_foto3.jpg"
+                ruta_foto3 = f"{foto_dir}/cita_{id}_foto3.jpg"
                 foto3.save(ruta_foto3)
                 cursor.execute("UPDATE citas SET foto3 = %s WHERE id = %s", (ruta_foto3, id))
 
@@ -707,20 +707,22 @@ def subir_fotos(id):
             conn.close()
 
         return redirect(url_for("completadas"))
+
     return render_template("subir_fotos.html", cita_id=id)
 @app.route("/ver-fotos/<int:id>")
 def ver_fotos(id):
     conn = get_db_connection()
     cursor = conn.cursor()
+
     try:
         cursor.execute("SELECT foto1, foto2, foto3 FROM citas WHERE id = %s", (id,))
         fotos = cursor.fetchone()
-        fotos_urls = [foto for foto in fotos if foto]  # Filtra solo las fotos que existen
     finally:
         cursor.close()
         conn.close()
 
-    return jsonify({"fotos": fotos_urls})
+    fotos = [foto for foto in fotos if foto]  # Filtra las fotos que no son None
+    return jsonify({"fotos": fotos})
 
 
 
