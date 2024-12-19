@@ -674,54 +674,56 @@ DATABASE_URL = "postgresql://citasatm_user:SlwK1sFIPJal7m8KaDtlRlYu1NseKxnV@dpg-
 
 @app.route("/subir-fotos/<int:id>", methods=["POST"])
 def subir_fotos(id):
-    if request.method == "POST":
-        fotos_subidas = {"foto1": None, "foto2": None, "foto3": None}
-        for key in fotos_subidas.keys():
-            foto = request.files.get(key)
+    fotos_guardadas = []
+    errores = []
+
+    fotos = {
+        "foto1": request.files.get("foto1"),
+        "foto2": request.files.get("foto2"),
+        "foto3": request.files.get("foto3")
+    }
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        for key, foto in fotos.items():
             if foto:
                 ruta_foto = f"static/fotos/cita_{id}_{key}.jpg"
                 try:
                     foto.save(ruta_foto)
-                    fotos_subidas[key] = ruta_foto
+                    cursor.execute(f"UPDATE citas SET {key} = %s WHERE id = %s", (ruta_foto, id))
+                    fotos_guardadas.append(ruta_foto)
                 except Exception as e:
-                    print(f"Error al guardar {key}: {e}")
-        
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        try:
-            # Actualizar las rutas en la base de datos
-            for key, ruta in fotos_subidas.items():
-                if ruta:
-                    cursor.execute(f"UPDATE citas SET {key} = %s WHERE id = %s", (ruta, id))
-            conn.commit()
-        except Exception as e:
-            print(f"Error al actualizar la base de datos: {e}")
-        finally:
-            cursor.close()
-            conn.close()
+                    errores.append(f"Error al guardar {key}: {e}")
+        conn.commit()
+    finally:
+        cursor.close()
+        conn.close()
 
-        return redirect(url_for("completadas"))
+    if errores:
+        return {"success": False, "errores": errores}, 400
+
+    return redirect(url_for("completadas"))
+
 @app.route("/ver-fotos/<int:id>")
 def ver_fotos(id):
     conn = get_db_connection()
     cursor = conn.cursor()
 
     try:
-        # Recuperar las fotos desde la base de datos
         cursor.execute("SELECT foto1, foto2, foto3 FROM citas WHERE id = %s", (id,))
         fotos = cursor.fetchone()
-        if fotos:
-            # Devuelve solo las rutas existentes
-            fotos_list = [foto for foto in fotos if foto]
-        else:
-            fotos_list = []
-
+        rutas_fotos = [f"/{foto}" for foto in fotos if foto]  # Prepara las rutas para ser accesibles desde el navegador
     finally:
         cursor.close()
         conn.close()
 
-    # Responder con las fotos en formato JSON
-    return jsonify({"fotos": fotos_list})
+    return {"fotos": rutas_fotos}
+
+photos_dir = "static/fotos"
+if not os.path.exists(photos_dir):
+    os.makedirs(photos_dir)
 
 
 
