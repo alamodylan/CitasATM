@@ -674,56 +674,33 @@ DATABASE_URL = "postgresql://citasatm_user:SlwK1sFIPJal7m8KaDtlRlYu1NseKxnV@dpg-
 
 @app.route("/subir-fotos/<int:id>", methods=["POST"])
 def subir_fotos(id):
-    fotos_guardadas = []
-    errores = []
-
-    fotos = {
-        "foto1": request.files.get("foto1"),
-        "foto2": request.files.get("foto2"),
-        "foto3": request.files.get("foto3")
-    }
-
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    try:
-        for key, foto in fotos.items():
-            if foto:
-                ruta_foto = f"static/fotos/cita_{id}_{key}.jpg"
-                try:
-                    foto.save(ruta_foto)
-                    cursor.execute(f"UPDATE citas SET {key} = %s WHERE id = %s", (ruta_foto, id))
-                    fotos_guardadas.append(ruta_foto)
-                except Exception as e:
-                    errores.append(f"Error al guardar {key}: {e}")
-        conn.commit()
-    finally:
-        cursor.close()
-        conn.close()
-
-    if errores:
-        return {"success": False, "errores": errores}, 400
-
+    fotos = []
+    for i in range(1, 4):  # foto1, foto2, foto3
+        foto = request.files.get(f"foto{i}")
+        if foto:
+            filename = f"cita_{id}_foto{i}.jpg"
+            filepath = os.path.join("static", "fotos", filename)
+            os.makedirs(os.path.dirname(filepath), exist_ok=True)  # Crea la carpeta si no existe
+            foto.save(filepath)
+            fotos.append(filepath)
+            # Actualiza la base de datos con la ruta de la foto
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute(f"UPDATE citas SET foto{i} = %s WHERE id = %s", (filepath, id))
+            conn.commit()
+            conn.close()
     return redirect(url_for("completadas"))
-
 @app.route("/ver-fotos/<int:id>")
 def ver_fotos(id):
     conn = get_db_connection()
     cursor = conn.cursor()
-
-    try:
-        cursor.execute("SELECT foto1, foto2, foto3 FROM citas WHERE id = %s", (id,))
-        fotos = cursor.fetchone()
-        rutas_fotos = [f"/{foto}" for foto in fotos if foto]  # Prepara las rutas para ser accesibles desde el navegador
-    finally:
-        cursor.close()
-        conn.close()
-
-    return {"fotos": rutas_fotos}
-
-photos_dir = "static/fotos"
-if not os.path.exists(photos_dir):
-    os.makedirs(photos_dir)
+    cursor.execute("SELECT foto1, foto2, foto3 FROM citas WHERE id = %s", (id,))
+    fotos = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    # Filtra fotos no nulas
+    fotos = [foto for foto in fotos if foto]
+    return jsonify(fotos=fotos)
 
 
 
