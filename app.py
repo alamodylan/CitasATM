@@ -12,6 +12,7 @@ from openpyxl import Workbook
 import psycopg2 
 from psycopg2 import connect
 from psycopg2.extras import RealDictCursor
+import base64
 
 app = Flask(__name__)
 
@@ -674,33 +675,48 @@ DATABASE_URL = "postgresql://citasatm_user:SlwK1sFIPJal7m8KaDtlRlYu1NseKxnV@dpg-
 
 @app.route("/subir-fotos/<int:id>", methods=["POST"])
 def subir_fotos(id):
-    fotos = []
-    for i in range(1, 4):  # foto1, foto2, foto3
-        foto = request.files.get(f"foto{i}")
-        if foto:
-            filename = f"cita_{id}_foto{i}.jpg"
-            filepath = os.path.join("static", "fotos", filename)
-            os.makedirs(os.path.dirname(filepath), exist_ok=True)  # Crea la carpeta si no existe
-            foto.save(filepath)
-            fotos.append(filepath)
-            # Actualiza la base de datos con la ruta de la foto
-            conn = get_db_connection()
-            cursor = conn.cursor()
-            cursor.execute(f"UPDATE citas SET foto{i} = %s WHERE id = %s", (filepath, id))
-            conn.commit()
-            conn.close()
+    foto1 = request.files.get("foto1")
+    foto2 = request.files.get("foto2")
+    foto3 = request.files.get("foto3")
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        if foto1:
+            cursor.execute("UPDATE citas SET foto1 = %s WHERE id = %s", (foto1.read(), id))
+        if foto2:
+            cursor.execute("UPDATE citas SET foto2 = %s WHERE id = %s", (foto2.read(), id))
+        if foto3:
+            cursor.execute("UPDATE citas SET foto3 = %s WHERE id = %s", (foto3.read(), id))
+
+        conn.commit()
+    finally:
+        cursor.close()
+        conn.close()
+
     return redirect(url_for("completadas"))
+
 @app.route("/ver-fotos/<int:id>")
 def ver_fotos(id):
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT foto1, foto2, foto3 FROM citas WHERE id = %s", (id,))
-    fotos = cursor.fetchone()
-    cursor.close()
-    conn.close()
-    # Filtra fotos no nulas
-    fotos = [foto for foto in fotos if foto]
-    return jsonify(fotos=fotos)
+
+    try:
+        cursor.execute("SELECT foto1, foto2, foto3 FROM citas WHERE id = %s", (id,))
+        fotos = cursor.fetchone()
+    finally:
+        cursor.close()
+        conn.close()
+
+    fotos_base64 = []
+    for foto in fotos:
+        if foto:
+            fotos_base64.append(base64.b64encode(foto).decode('utf-8'))
+        else:
+            fotos_base64.append(None)
+
+    return jsonify({"fotos": fotos_base64})
 
 
 
@@ -713,6 +729,7 @@ if __name__ == "__main__":
 
     # Ejecuta la app con host accesible públicamente
     app.run(host="0.0.0.0", port=port)
+
 
 
 
