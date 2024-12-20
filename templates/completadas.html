@@ -133,35 +133,35 @@
 
         // Función para mostrar las fotos
         document.getElementById('modalVerFotos').addEventListener('show.bs.modal', function (event) {
-            const button = event.relatedTarget;
-            const citaId = button.getAttribute('data-id');
+    const button = event.relatedTarget;
+    const citaId = button.getAttribute('data-id');
 
-            fetch(`/ver-fotos/${citaId}`)
-                .then(response => response.json())
-                .then(data => {
-                    const container = document.getElementById('fotosContainer');
-                    container.innerHTML = ''; // Limpiar el contenedor
+    fetch(`/ver-fotos/${citaId}`)
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('fotosContainer');
+            container.innerHTML = ''; // Limpiar el contenedor
 
-                    if (data.fotos && data.fotos.some(foto => foto !== null)) {
-                        data.fotos.forEach(foto => {
-                            if (foto) {
-                                const img = document.createElement('img');
-                                img.src = `data:image/jpeg;base64,${foto}`;
-                                img.classList.add('img-thumbnail', 'm-2');
-                                img.style.maxWidth = '200px';
-                                container.appendChild(img);
-                            }
-                        });
-                    } else {
-                        container.innerHTML = "<p>No hay fotos disponibles.</p>";
+            if (data.fotos && data.fotos.some(foto => foto !== null)) {
+                data.fotos.forEach(foto => {
+                    if (foto) {
+                        const img = document.createElement('img');
+                        img.src = `data:image/jpeg;base64,${foto}`;
+                        img.classList.add('img-thumbnail', 'm-2');
+                        img.style.maxWidth = '200px';
+                        container.appendChild(img);
                     }
-                })
-                .catch(error => {
-                    console.error("Error al cargar las fotos:", error);
-                    const container = document.getElementById('fotosContainer');
-                    container.innerHTML = "<p>Error al cargar las fotos.</p>";
                 });
+            } else {
+                container.innerHTML = "<p>No hay fotos disponibles.</p>";
+            }
+        })
+        .catch(error => {
+            console.error("Error al cargar las fotos:", error);
+            const container = document.getElementById('fotosContainer');
+            container.innerHTML = "<p>Error al cargar las fotos.</p>";
         });
+});
 
         // Función para validar el código de revertir cita
         function validarCodigoRevertir() {

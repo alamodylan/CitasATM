@@ -704,26 +704,36 @@ def subir_fotos(id):
 
     return redirect("/completadas")
 
-@app.route("/ver-fotos/<int:id>")
+@app.route("/ver-fotos/<int:id>", methods=["GET"])
 def ver_fotos(id):
+    import base64
     conn = get_db_connection()
     cursor = conn.cursor()
+
     try:
+        # Recuperar las fotos desde la base de datos
         cursor.execute("SELECT foto1, foto2, foto3 FROM citas WHERE id = %s", (id,))
         fotos = cursor.fetchone()
-        print(f"Fotos recuperadas (brutas): {fotos}")
 
-        # Convierte las fotos a Base64 solo si no son None
-        fotos_base64 = [
-            base64.b64encode(foto).decode('utf-8') if foto else None
-            for foto in fotos
-        ]
+        if not fotos:
+            return jsonify({"error": "No se encontró la cita o no tiene fotos."}), 404
 
-        print(f"Fotos en Base64: {fotos_base64}")
+        fotos_base64 = []
+        for foto in fotos:
+            if foto is not None:
+                try:
+                    # Convertir a base64 si es de tipo memoria o bytes
+                    fotos_base64.append(base64.b64encode(foto).decode('utf-8'))
+                except Exception as e:
+                    fotos_base64.append(None)
+                    print(f"Error procesando una foto: {e}")
+
         return jsonify({"fotos": fotos_base64})
+
     except Exception as e:
         print(f"Error al cargar las fotos: {e}")
-        return jsonify({"error": "Error al cargar las fotos"}), 500
+        return jsonify({"error": "Ocurrió un error al recuperar las fotos."}), 500
+
     finally:
         cursor.close()
         conn.close()
