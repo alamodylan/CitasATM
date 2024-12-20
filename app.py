@@ -684,48 +684,43 @@ def subir_fotos(id):
 
     try:
         if foto1:
-            cursor.execute("UPDATE citas SET foto1 = %s WHERE id = %s", (foto1.read(), id))
+            foto1_data = foto1.read()  # Leer los bytes de la imagen
+            cursor.execute("UPDATE citas SET foto1 = %s WHERE id = %s", (foto1_data, id))
         if foto2:
-            cursor.execute("UPDATE citas SET foto2 = %s WHERE id = %s", (foto2.read(), id))
+            foto2_data = foto2.read()
+            cursor.execute("UPDATE citas SET foto2 = %s WHERE id = %s", (foto2_data, id))
         if foto3:
-            cursor.execute("UPDATE citas SET foto3 = %s WHERE id = %s", (foto3.read(), id))
-
+            foto3_data = foto3.read()
+            cursor.execute("UPDATE citas SET foto3 = %s WHERE id = %s", (foto3_data, id))
+        
         conn.commit()
-        return redirect(url_for("completadas"))
-
-    except Exception as e:
-        print(f"Error al guardar fotos: {e}")
-        return jsonify({"error": "No se pudieron guardar las fotos"}), 500
-
     finally:
         cursor.close()
         conn.close()
 
-@app.route("/ver-fotos/<int:id>", methods=["GET"])
+    return redirect(url_for("completadas"))
+
+@app.route("/ver-fotos/<int:id>")
 def ver_fotos(id):
     conn = get_db_connection()
     cursor = conn.cursor()
 
     try:
-        # Recuperar fotos de la base de datos
         cursor.execute("SELECT foto1, foto2, foto3 FROM citas WHERE id = %s", (id,))
         fotos = cursor.fetchone()
+
         fotos_base64 = []
-
-        if fotos:
-            for foto in fotos:
-                if foto:  # Verifica si la foto no es NULL
-                    fotos_base64.append(base64.b64encode(foto).decode('utf-8'))
-
-        return jsonify({"fotos": fotos_base64})
-
-    except Exception as e:
-        print(f"Error al cargar fotos: {e}")
-        return jsonify({"error": "No se pudieron cargar las fotos"}), 500
+        for foto in fotos:
+            if foto:  # Si la foto no es nula
+                fotos_base64.append(base64.b64encode(foto).decode('utf-8'))
+            else:
+                fotos_base64.append(None)
 
     finally:
         cursor.close()
         conn.close()
+
+    return {"fotos": fotos_base64}
 
 
 
