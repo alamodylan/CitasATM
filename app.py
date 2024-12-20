@@ -675,52 +675,58 @@ DATABASE_URL = "postgresql://citasatm_user:SlwK1sFIPJal7m8KaDtlRlYu1NseKxnV@dpg-
 
 @app.route("/subir-fotos/<int:id>", methods=["POST"])
 def subir_fotos(id):
-    foto1 = request.files.get("foto1")
-    foto2 = request.files.get("foto2")
-    foto3 = request.files.get("foto3")
-
     conn = get_db_connection()
     cursor = conn.cursor()
-
     try:
+        foto1 = request.files.get("foto1")
+        foto2 = request.files.get("foto2")
+        foto3 = request.files.get("foto3")
+
+        # Log de fotos subidas
+        print(f"Foto1: {foto1.filename if foto1 else 'No enviada'}")
+        print(f"Foto2: {foto2.filename if foto2 else 'No enviada'}")
+        print(f"Foto3: {foto3.filename if foto3 else 'No enviada'}")
+
+        # Guarda las fotos como bytes en la base de datos
         if foto1:
-            foto1_data = foto1.read()  # Leer los bytes de la imagen
-            cursor.execute("UPDATE citas SET foto1 = %s WHERE id = %s", (foto1_data, id))
+            cursor.execute("UPDATE citas SET foto1 = %s WHERE id = %s", (foto1.read(), id))
         if foto2:
-            foto2_data = foto2.read()
-            cursor.execute("UPDATE citas SET foto2 = %s WHERE id = %s", (foto2_data, id))
+            cursor.execute("UPDATE citas SET foto2 = %s WHERE id = %s", (foto2.read(), id))
         if foto3:
-            foto3_data = foto3.read()
-            cursor.execute("UPDATE citas SET foto3 = %s WHERE id = %s", (foto3_data, id))
-        
+            cursor.execute("UPDATE citas SET foto3 = %s WHERE id = %s", (foto3.read(), id))
+
         conn.commit()
+    except Exception as e:
+        print(f"Error al guardar fotos: {e}")
     finally:
         cursor.close()
         conn.close()
 
-    return redirect(url_for("completadas"))
+    return redirect("/completadas")
 
 @app.route("/ver-fotos/<int:id>")
 def ver_fotos(id):
     conn = get_db_connection()
     cursor = conn.cursor()
-
     try:
         cursor.execute("SELECT foto1, foto2, foto3 FROM citas WHERE id = %s", (id,))
         fotos = cursor.fetchone()
+        print(f"Fotos recuperadas (brutas): {fotos}")
 
-        fotos_base64 = []
-        for foto in fotos:
-            if foto:  # Si la foto no es nula
-                fotos_base64.append(base64.b64encode(foto).decode('utf-8'))
-            else:
-                fotos_base64.append(None)
+        # Convierte las fotos a Base64 solo si no son None
+        fotos_base64 = [
+            base64.b64encode(foto).decode('utf-8') if foto else None
+            for foto in fotos
+        ]
 
+        print(f"Fotos en Base64: {fotos_base64}")
+        return jsonify({"fotos": fotos_base64})
+    except Exception as e:
+        print(f"Error al cargar las fotos: {e}")
+        return jsonify({"error": "Error al cargar las fotos"}), 500
     finally:
         cursor.close()
         conn.close()
-
-    return {"fotos": fotos_base64}
 
 
 
