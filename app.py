@@ -691,30 +691,38 @@ def subir_fotos(id):
             cursor.execute("UPDATE citas SET foto3 = %s WHERE id = %s", (foto3.read(), id))
 
         conn.commit()
+        return redirect(url_for("completadas"))
+
+    except Exception as e:
+        print(f"Error al guardar fotos: {e}")
+        return jsonify({"error": "No se pudieron guardar las fotos"}), 500
+
     finally:
         cursor.close()
         conn.close()
 
-    return redirect(url_for("completadas"))
-
-@app.route("/ver-fotos/<int:id>")
+@app.route("/ver-fotos/<int:id>", methods=["GET"])
 def ver_fotos(id):
     conn = get_db_connection()
     cursor = conn.cursor()
-    
+
     try:
+        # Recuperar fotos de la base de datos
         cursor.execute("SELECT foto1, foto2, foto3 FROM citas WHERE id = %s", (id,))
         fotos = cursor.fetchone()
-
-        # Convertir fotos de bytea a Base64
         fotos_base64 = []
-        for foto in fotos:
-            if foto:
-                fotos_base64.append(base64.b64encode(foto).decode('utf-8'))
-            else:
-                fotos_base64.append(None)
+
+        if fotos:
+            for foto in fotos:
+                if foto:  # Verifica si la foto no es NULL
+                    fotos_base64.append(base64.b64encode(foto).decode('utf-8'))
 
         return jsonify({"fotos": fotos_base64})
+
+    except Exception as e:
+        print(f"Error al cargar fotos: {e}")
+        return jsonify({"error": "No se pudieron cargar las fotos"}), 500
+
     finally:
         cursor.close()
         conn.close()
