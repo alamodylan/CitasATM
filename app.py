@@ -701,22 +701,23 @@ def subir_fotos(id):
 def ver_fotos(id):
     conn = get_db_connection()
     cursor = conn.cursor()
-
+    
     try:
         cursor.execute("SELECT foto1, foto2, foto3 FROM citas WHERE id = %s", (id,))
         fotos = cursor.fetchone()
+
+        # Convertir fotos de bytea a Base64
+        fotos_base64 = []
+        for foto in fotos:
+            if foto:
+                fotos_base64.append(base64.b64encode(foto).decode('utf-8'))
+            else:
+                fotos_base64.append(None)
+
+        return jsonify({"fotos": fotos_base64})
     finally:
         cursor.close()
         conn.close()
-
-    fotos_base64 = []
-    for foto in fotos:
-        if foto:
-            fotos_base64.append(base64.b64encode(foto).decode('utf-8'))
-        else:
-            fotos_base64.append(None)
-
-    return jsonify({"fotos": fotos_base64})
 
 
 
