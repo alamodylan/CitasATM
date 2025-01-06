@@ -7,9 +7,9 @@
     <title>Sistema de Citas - ATM</title>
 </head>
 <style>
-    .estado-contenedor, .tipo-operacion {
-        padding-left: 5px;
-        padding-right: 5px;
+    .reduce-space {
+        padding-right: 5px; /* Reducir el espacio derecho */
+        padding-left: 5px;  /* Reducir el espacio izquierdo */
     }
 </style>
 <body>
@@ -45,8 +45,8 @@
                     <th>Naviera</th>
                     <th>Fecha</th>
                     <th>Horario</th>
-                    <th>Estado del Contenedor</th> <!-- Nueva columna -->
-                    <th>Tipo de Operación</th>     <!-- Nueva columna -->
+                    <th class="reduce-space">Estado del Contenedor</th> <!-- Reducir espacio -->
+                    <th class="reduce-space">Tipo de Operación</th>     <!-- Reducir espacio -->
                     <th>Acciones</th>
                 </tr>
             </thead>
