@@ -39,6 +39,8 @@
                     <th>Naviera</th>
                     <th>Fecha</th>
                     <th>Horario</th>
+                    <th>Estado del Contenedor</th> <!-- Nueva columna -->
+                    <th>Tipo de Operación</th>     <!-- Nueva columna -->
                     <th>Acciones</th>
                 </tr>
             </thead>
@@ -53,6 +55,8 @@
                     <td>{{ cita['naviera'] }}</td>
                     <td>{{ cita['fecha'] }}</td>
                     <td>{{ cita['horario'] }}</td>
+                    <td>{{ cita['estado_contenedor'] }}</td> <!-- Estado del Contenedor -->
+                    <td>{{ cita['tipo_operacion'] }}</td>     <!-- Tipo de Operación -->
                     <td>
                         <form method="POST" action="/completar-cita/{{ cita['id'] }}" style="display:inline;">
                             <button type="submit" class="btn btn-success btn-sm">Completado</button>
