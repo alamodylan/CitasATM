@@ -214,8 +214,8 @@ def crear_cita():
         tipo_operacion = request.form["tipo_operacion"]
 
         # Validación de la naviera
-        if naviera not in ["COSCO", "ONE", "OOCL"]:
-            return render_template("crear_cita.html", error="La naviera debe ser COSCO, OOCL o ONE")
+        if naviera not in ["COSCO", "ONE", "OOCL", "VASI"]:
+            return render_template("crear_cita.html", error="La naviera debe ser COSCO, OOCL, VASI o ONE")
 
         # Validación del estado del contenedor
         if estado_contenedor not in ["Cargado", "Vacio"]:
@@ -297,12 +297,12 @@ def editar_cita(id):
             tipo_operacion = request.form.get("tipo_operacion")
 
             # Validación de la naviera
-            if naviera not in ["COSCO", "ONE", "OOCL"]:
+            if naviera not in ["COSCO", "ONE", "OOCL", "VASI"]:
                 return render_template(
                     "editar_cita.html", 
                     cita=cita, 
                     time_slots=time_slots, 
-                    error="La naviera debe ser COSCO, OOCL o ONE"
+                    error="La naviera debe ser COSCO, OOCL, VASI o ONE"
                 )
 
             # Validación del estado del contenedor
@@ -749,6 +749,7 @@ if __name__ == "__main__":
 
     # Ejecuta la app con host accesible públicamente
     app.run(host="0.0.0.0", port=port)
+
 
 
 
