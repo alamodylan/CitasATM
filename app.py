@@ -81,6 +81,29 @@ def init_db():
     finally:
         cursor.close()
         conn.close()
+@app.route("/", methods=["GET"])
+def index():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    search_query = request.args.get("search", "").strip()
+    filter_estado = request.args.get("estado", "").strip()
+
+    sql = "SELECT * FROM citas WHERE 1=1"
+    params = []
+
+    if search_query:
+        sql += " AND (Chofer ILIKE %s OR Placa ILIKE %s OR Contenedor o BK ILIKE %s OR Naviera ILIKE %s)"
+        params.extend([f"%{search_query}%"] * 4)
+
+    cursor.execute(sql, params)
+    citas = cursor.fetchall()
+
+    cursor.execute("SELECT DISTINCT estado FROM citas")
+
+    conn.close()
+    return render_template("index.html", citas=citas, search_query=search_query, filter_estado=filter_estado)
+
 @app.route("/")
 def home():
     # Configurar la zona horaria
@@ -105,7 +128,7 @@ def home():
             cita_end_datetime = zona_local.localize(cita_end_datetime)
 
             # Comparar con la hora actual
-            if cita_end_datetime + timedelta(hours=1) < now and cita["estado"] == "Pendiente":
+            if cita_end_datetime + timedelta(hours=2) < now and cita["estado"] == "Pendiente":
                 cursor.execute("UPDATE citas SET estado = 'Vencida' WHERE id = %s", (cita["id"],))
                 conn.commit()
 
@@ -116,6 +139,7 @@ def home():
     finally:
         cursor.close()
         conn.close()
+
 
     return render_template("index.html", citas=pendientes)
 

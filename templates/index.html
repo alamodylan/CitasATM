@@ -20,6 +20,12 @@
     }
 </style>
 <body>
+     <div class="search-filter">
+        <form method="GET" action="/" style="display: flex; flex: 1; gap: 10px;">
+            <input type="text" name="search" placeholder="Buscar por contenedor, nombre, placa, naviera..." value="{{ search_query }}">
+            <button type="submit">Buscar</button>
+        </form>
+    </div>
     <div class="container mt-5">
         <!-- Título con logo -->
         <div class="d-flex justify-content-between align-items-center mb-3">
