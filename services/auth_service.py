@@ -51,14 +51,22 @@ def login_user(username, password):
     # =====================================================
     valid_password = False
 
-    try:
-        valid_password = check_password_hash(
-            user["password_hash"],
-            password
-        )
-    except Exception:
+    stored_password = user.get("password_hash")
 
-        if user["password_hash"] == password:
+    if stored_password:
+
+        if (
+            stored_password.startswith("scrypt:")
+            or stored_password.startswith("pbkdf2:")
+        ):
+
+            valid_password = check_password_hash(
+                stored_password,
+                password
+            )
+
+        elif stored_password == password:
+
             valid_password = True
 
     if not valid_password:
