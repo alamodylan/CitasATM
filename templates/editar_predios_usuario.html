@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Predios Usuario | ATM Citas
+{% endblock %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+
+    <div class="col-xl-7">
+
+        <!-- ========================================== -->
+        <!-- HEADER -->
+        <!-- ========================================== -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+
+            <div>
+
+                <h2 class="fw-bold mb-1">
+
+                    Predios del Usuario
+
+                </h2>
+
+                <p class="text-muted mb-0">
+
+                    Configuración de acceso por predio
+
+                </p>
+
+                <div class="mt-2">
+                    <span class="badge bg-dark fs-6">
+                        Predio activo:
+                        {{ active_predio_nombre }}
+                    </span>
+                </div>
+
+            </div>
+
+            <a
+                href="{{ url_for('users.usuarios') }}"
+                class="btn btn-outline-secondary"
+            >
+
+                <i class="bi bi-arrow-left"></i>
+
+                Volver
+
+            </a>
+
+        </div>
+
+        <!-- ========================================== -->
+        <!-- CARD -->
+        <!-- ========================================== -->
+        <div class="card card-custom">
+
+            <div class="card-body p-4">
+
+                <!-- ================================== -->
+                <!-- INFO USER -->
+                <!-- ================================== -->
+                <div class="mb-4">
+
+                    <div class="border rounded-4 bg-light p-4">
+
+                        <div class="row">
+
+                            <!-- ====================== -->
+                            <!-- USERNAME -->
+                            <!-- ====================== -->
+                            <div class="col-md-6">
+
+                                <div class="text-muted small">
+
+                                    Usuario
+
+                                </div>
+
+                                <div class="fw-bold fs-5">
+
+                                    {{ user.username }}
+
+                                </div>
+
+                            </div>
+
+                            <!-- ====================== -->
+                            <!-- ROL -->
+                            <!-- ====================== -->
+                            <div class="col-md-6">
+
+                                <div class="text-muted small">
+
+                                    Rol
+
+                                </div>
+
+                                <div class="fw-bold fs-5">
+
+                                    {{ user.role }}
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <!-- ================================== -->
+                <!-- FORM -->
+                <!-- ================================== -->
+                <form method="POST">
+
+                    <label class="form-label fw-semibold mb-3">
+
+                        Predios Permitidos
+
+                    </label>
+
+                    <div class="row g-3">
+
+                        {% for predio in predios %}
+
+                        <div class="col-md-4">
+
+                            <div class="border rounded-4 p-3 bg-light h-100">
+
+                                <div class="form-check">
+
+                                    <input
+                                        class="form-check-input"
+                                        type="checkbox"
+                                        name="predios"
+                                        value="{{ predio.id }}"
+                                        id="predio_{{ predio.id }}"
+
+                                        {% if predio.id in user_predios_ids %}
+                                            checked
+                                        {% endif %}
+                                    >
+
+                                    <label
+                                        class="form-check-label fw-semibold"
+                                        for="predio_{{ predio.id }}"
+                                    >
+
+                                        {{ predio.nombre }}
+
+                                    </label>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        {% endfor %}
+
+                    </div>
+
+                    <!-- ============================== -->
+                    <!-- BOTONES -->
+                    <!-- ============================== -->
+                    <div class="d-flex justify-content-end gap-3 mt-5">
+
+                        <a
+                            href="{{ url_for('users.usuarios') }}"
+                            class="btn btn-secondary"
+                        >
+
+                            Cancelar
+
+                        </a>
+
+                        <button
+                            type="submit"
+                            class="btn btn-primary px-4"
+                        >
+
+                            <i class="bi bi-save-fill me-2"></i>
+
+                            Guardar Cambios
+
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

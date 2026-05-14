@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Login | ATM Citas
+{% endblock %}
+
+{% block content %}
+
+<div class="row justify-content-center align-items-center" style="min-height: 80vh;">
+
+    <div class="col-md-5 col-lg-4">
+
+        <div class="card card-custom">
+
+            <div class="card-body p-5">
+
+                <!-- ====================================== -->
+                <!-- LOGO -->
+                <!-- ====================================== -->
+                <div class="text-center mb-4">
+
+                    <img
+                        src="{{ url_for('static', filename='img/LogoAlamo.png') }}"
+                        alt="Logo"
+                        style="width: 90px;"
+                        class="mb-3"
+                    >
+
+                    <h2 class="fw-bold mb-1">
+                        ATM Citas
+                    </h2>
+
+                    <p class="text-muted">
+                        Sistema de Control de Citas
+                    </p>
+
+                </div>
+
+                <!-- ====================================== -->
+                <!-- FORM -->
+                <!-- ====================================== -->
+                <form method="POST">
+
+                    <!-- ============================== -->
+                    <!-- USUARIO -->
+                    <!-- ============================== -->
+                    <div class="mb-3">
+
+                        <label class="form-label fw-semibold">
+                            Usuario
+                        </label>
+
+                        <div class="input-group">
+
+                            <span class="input-group-text">
+                                <i class="bi bi-person-fill"></i>
+                            </span>
+
+                            <input
+                                type="text"
+                                name="username"
+                                class="form-control"
+                                value="{{ request.form.get('username', '') }}"
+                                required
+                                autofocus
+                            >
+
+                        </div>
+
+                    </div>
+
+                    <!-- ============================== -->
+                    <!-- PASSWORD -->
+                    <!-- ============================== -->
+                    <div class="mb-4">
+
+                        <label class="form-label fw-semibold">
+                            Contraseña
+                        </label>
+
+                        <div class="input-group">
+
+                            <span class="input-group-text">
+                                <i class="bi bi-lock-fill"></i>
+                            </span>
+
+                            <input
+                                type="password"
+                                name="password"
+                                id="password"
+                                class="form-control"
+                                required
+                            >
+
+                            <button
+                                type="button"
+                                class="btn btn-outline-secondary"
+                                onclick="togglePassword()"
+                            >
+                                <i class="bi bi-eye-fill"></i>
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                    <!-- ============================== -->
+                    <!-- BOTÓN -->
+                    <!-- ============================== -->
+                    <div class="d-grid">
+
+                        <button
+                            type="submit"
+                            class="btn btn-primary btn-lg"
+                        >
+                            <i class="bi bi-box-arrow-in-right"></i>
+                            Ingresar
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </div>
+
+        <!-- ========================================== -->
+        <!-- FOOTER -->
+        <!-- ========================================== -->
+        <div class="text-center mt-4 text-muted small">
+
+            ATM Systems © 2026
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+function togglePassword() {
+
+    const input = document.getElementById(
+        "password"
+    )
+
+    if (input.type === "password") {
+
+        input.type = "text"
+
+    } else {
+
+        input.type = "password"
+
+    }
+
+}
+
+</script>
+
+{% endblock %}

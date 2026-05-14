@@ -1,198 +1,454 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <title>Sistema de Citas - ATM</title>
-</head>
-<style>
-    .reduce-space {
-        padding-left: 0; 
-        padding-right: 0;
-    }
+{% extends "base.html" %}
 
-    .actions-column {
-        display: flex;
-        gap: 5px; /* Espacio mínimo entre botones */
-        justify-content: center; /* Centrar los botones */
-        flex-wrap: wrap; /* Asegurar que se acomoden si no hay espacio */
-    }
-</style>
-<body>
-    <div class="container mt-5">
-        <!-- Título con logo -->
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h1 class="text-center flex-grow-1">Sistema de Citas - ATM</h1>
-            <img src="{{ url_for('static', filename='LogoAlamo.png') }}" alt="Logo Álamo Terminales Marítimos" width="150">
+{% block title %}
+    Inicio | ATM Citas
+{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+
+    <div>
+        <h2 class="fw-bold mb-1">
+            Citas Pendientes
+        </h2>
+
+        <p class="text-muted mb-0">
+            Gestión operativa de citas ATM
+        </p>
+
+        <div class="mt-2">
+            <span class="badge bg-dark fs-6">
+                Predio activo:
+                {{ active_predio_nombre }}
+            </span>
         </div>
+    </div>
 
-        <!-- Botones de navegación -->
-        <div class="d-flex justify-content-between mb-3">
-            <a href="/crear-cita" class="btn btn-primary">Crear Nueva Cita</a>
-            <div>
-                <a href="/vencidas" class="btn btn-danger">Ver Citas Vencidas</a>
-                <a href="/completadas" class="btn btn-success">Ver Citas Completadas</a>
-                <a href="/dashboard" class="btn btn-warning">Dashboard</a>
-            </div>
-        </div>
+    {% if current_user.role in ['ADMIN', 'PREDIO'] %}
 
-        <!-- Subtítulo "Citas Pendientes" -->
-        <h2 class="text-center mb-3">Citas Pendientes</h2>
+    <div class="d-flex gap-2">
 
-        <!-- Listado de citas -->
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Contenedor o BK</th>
-                    <th>Chofer</th>
-                    <th>Cédula</th>
-                    <th>Placa</th>
-                    <th>Naviera</th>
-                    <th>Fecha</th>
-                    <th>Horario</th>
-                    <th class="reduce-space">Estado del Contenedor</th> <!-- Reducir espacio -->
-                    <th class="reduce-space">Tipo de Operación</th>     <!-- Reducir espacio -->
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for cita in citas %}
-                <tr>
-                    <td>{{ cita['id'] }}</td>
-                    <td>{{ cita['contenedor'] }}</td>
-                    <td>{{ cita['chofer_nombre'] }}</td>
-                    <td>{{ cita['chofer_cedula'] }}</td>
-                    <td>{{ cita['cabezal_placa'] }}</td>
-                    <td>{{ cita['naviera'] }}</td>
-                    <td>{{ cita['fecha'] }}</td>
-                    <td>{{ cita['horario'] }}</td>
-                    <td class="reduce-space">{{ cita['estado_contenedor'] }}</td>
-                    <td class="reduce-space">{{ cita['tipo_operacion'] }}</td>
-                    <td>
-                        <div class="actions-column">
-                            <form method="POST" action="/completar-cita/{{ cita['id'] }}" style="display:inline;">
-                                <button type="submit" class="btn btn-success btn-sm">Completado</button>
-                            </form>
-                            <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#codigoModalEliminar" data-id="{{ cita['id'] }}">Eliminar</button>
-                            <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#codigoModalEditar" data-id="{{ cita['id'] }}">Editar</button>
-                            <a href="/generar-pdf/{{ cita['id'] }}" class="btn btn-secondary btn-sm">Descargar PDF</a>
+        <a
+            href="{{ url_for('citas.crear_cita') }}"
+            class="btn btn-primary"
+        >
+            <i class="bi bi-plus-circle-fill me-2"></i>
+            Nueva Cita
+        </a>
+
+        <a
+            href="{{ url_for('dashboard.dashboard') }}"
+            class="btn btn-outline-primary"
+        >
+            <i class="bi bi-bar-chart-fill"></i>
+        </a>
+
+    </div>
+
+    {% endif %}
+
+</div>
+
+<!-- ================================================== -->
+<!-- CARDS -->
+<!-- ================================================== -->
+<div class="row g-4 mb-4">
+
+    <!-- ============================================== -->
+    <!-- PENDIENTES -->
+    <!-- ============================================== -->
+    <div class="col-md-4">
+
+        <div class="card card-custom h-100">
+
+            <div class="card-body">
+
+                <div class="d-flex justify-content-between align-items-center">
+
+                    <div>
+
+                        <div class="text-muted">
+                            Pendientes
                         </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
 
-    <!-- Modales para autorización -->
-    <!-- Modal para solicitar código de autorización para eliminar -->
-    <div class="modal fade" id="codigoModalEliminar" tabindex="-1" aria-labelledby="codigoModalEliminarLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="codigoModalEliminarLabel">Eliminar Cita</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <div class="fs-2 fw-bold text-warning">
+                            {{ citas|length }}
+                        </div>
+
+                    </div>
+
+                    <i
+                        class="bi bi-clock-history text-warning"
+                        style="font-size: 3rem;"
+                    ></i>
+
                 </div>
-                <div class="modal-body">
-                    <p>Introduce el código de autorización para eliminar esta cita:</p>
-                    <input type="password" id="codigo_autorizacion_eliminar" class="form-control" placeholder="Código" required>
-                    <div id="eliminarError" class="text-danger mt-2" style="display: none;">Código de autorización incorrecto.</div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-danger" onclick="validarCodigoEliminar()">Confirmar</button>
-                </div>
+
             </div>
+
         </div>
+
     </div>
 
-    <!-- Modal para solicitar código de autorización para editar -->
-    <div class="modal fade" id="codigoModalEditar" tabindex="-1" aria-labelledby="codigoModalEditarLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="codigoModalEditarLabel">Editar Cita</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <!-- ============================================== -->
+    <!-- COMPLETADAS -->
+    <!-- ============================================== -->
+    <div class="col-md-4">
+
+        <a
+            href="{{ url_for('citas.completadas') }}"
+            class="text-decoration-none text-dark"
+        >
+
+            <div class="card card-custom h-100">
+
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between align-items-center">
+
+                        <div>
+
+                            <div class="text-muted">
+                                Completadas
+                            </div>
+
+                            <div class="fs-2 fw-bold text-success">
+                                {{ completadas_count or 0 }}
+                            </div>
+
+                        </div>
+
+                        <i
+                            class="bi bi-check-circle-fill text-success"
+                            style="font-size: 3rem;"
+                        ></i>
+
+                    </div>
+
                 </div>
-                <div class="modal-body">
-                    <p>Introduce el código de autorización para editar esta cita:</p>
-                    <input type="password" id="codigo_autorizacion_editar" class="form-control" placeholder="Código" required>
-                    <div id="editarError" class="text-danger mt-2" style="display: none;">Código de autorización incorrecto.</div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-warning" onclick="validarCodigoEditar()">Confirmar</button>
-                </div>
+
             </div>
-        </div>
+
+        </a>
+
     </div>
 
-    <script>
-        let citaIdToDelete = null;
+    <!-- ============================================== -->
+    <!-- VENCIDAS -->
+    <!-- ============================================== -->
+    <div class="col-md-4">
 
-        document.getElementById('codigoModalEliminar').addEventListener('show.bs.modal', function (event) {
-            const button = event.relatedTarget;
-            citaIdToDelete = button.getAttribute('data-id');
-        });
+        <a
+            href="{{ url_for('citas.vencidas') }}"
+            class="text-decoration-none text-dark"
+        >
 
-        function validarCodigoEliminar() {
-            const codigo = document.getElementById("codigo_autorizacion_eliminar").value;
-            const errorDiv = document.getElementById("eliminarError");
+            <div class="card card-custom h-100">
 
-            if (codigo === "atm7410") {
-                errorDiv.style.display = "none";
-                fetch(`/eliminar-cita/${citaIdToDelete}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ codigo_autorizacion: codigo })
-                })
-                .then(response => {
-                    if (response.ok) {
-                        location.reload();
-                    } else {
-                        response.text().then(text => {
-                            errorDiv.textContent = text;
-                            errorDiv.style.display = "block";
-                        });
-                    }
-                });
-            } else {
-                errorDiv.textContent = "Código de autorización incorrecto.";
-                errorDiv.style.display = "block";
-            }
-        }
-    </script>
-    <script>
-        let citaIdToEdit = null;
-    
-        // Asignar el ID de la cita al abrir el modal de editar
-        document.getElementById('codigoModalEditar').addEventListener('show.bs.modal', function (event) {
-            const button = event.relatedTarget;
-            citaIdToEdit = button.getAttribute('data-id'); // Asignar el ID de la cita
-        });
-    
-        // Validar código de autorización para editar
-        function validarCodigoEditar() {
-            const codigo = document.getElementById("codigo_autorizacion_editar").value;
-            const errorDiv = document.getElementById("editarError");
-    
-            if (codigo === "atm7410") { // Cambia "12345" por la clave correcta
-                errorDiv.style.display = "none";
-                window.location.href = `/editar-cita/${citaIdToEdit}`; // Redirigir a la edición de la cita
-            } else {
-                errorDiv.textContent = "Código de autorización incorrecto.";
-                errorDiv.style.display = "block";
-            }
-        }
-    </script>
+                <div class="card-body">
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+                    <div class="d-flex justify-content-between align-items-center">
+
+                        <div>
+
+                            <div class="text-muted">
+                                Vencidas
+                            </div>
+
+                            <div class="fs-2 fw-bold text-danger">
+                                {{ vencidas_count or 0 }}
+                            </div>
+
+                        </div>
+
+                        <i
+                            class="bi bi-x-circle-fill text-danger"
+                            style="font-size: 3rem;"
+                        ></i>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </a>
+
+    </div>
+
+</div>
+
+<!-- ================================================== -->
+<!-- TABLA -->
+<!-- ================================================== -->
+<div class="card card-custom">
+
+    <div class="card-header-custom d-flex justify-content-between align-items-center">
+
+        <div>
+
+            <i class="bi bi-calendar-event-fill me-2"></i>
+
+            Listado de Citas
+
+        </div>
+
+        <span class="badge bg-primary">
+
+            {{ citas|length }} registros
+
+        </span>
+
+    </div>
+
+    <div class="card-body">
+
+        {% if citas %}
+
+        <div class="table-responsive">
+
+            <table class="table table-hover align-middle">
+
+                <thead>
+
+                    <tr>
+
+                        <th>Predio</th>
+                        <th>Fecha</th>
+                        <th>Horario</th>
+                        <th>Chofer</th>
+                        <th>Placa</th>
+                        <th>Contenedor / BK</th>
+                        <th>Naviera</th>
+                        <th>Operación</th>
+                        <th>Estado</th>
+
+                        {% if current_user.role == 'ADMIN' %}
+                        <th class="text-center">
+                            Acciones
+                        </th>
+                        {% endif %}
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    {% for cita in citas %}
+
+                    <tr>
+
+                        <!-- ====================== -->
+                        <!-- PREDIO -->
+                        <!-- ====================== -->
+                        <td>
+
+                            <span class="fw-semibold">
+
+                                {{ cita.predio_nombre or 'Sin predio' }}
+
+                            </span>
+
+                        </td>
+
+                        <!-- ====================== -->
+                        <!-- FECHA -->
+                        <!-- ====================== -->
+                        <td>
+
+                            {{ cita.fecha }}
+
+                        </td>
+
+                        <!-- ====================== -->
+                        <!-- HORARIO -->
+                        <!-- ====================== -->
+                        <td>
+
+                            {{ cita.horario }}
+
+                        </td>
+
+                        <!-- ====================== -->
+                        <!-- CHOFER -->
+                        <!-- ====================== -->
+                        <td>
+
+                            {{ cita.chofer_nombre }}
+
+                        </td>
+
+                        <!-- ====================== -->
+                        <!-- PLACA -->
+                        <!-- ====================== -->
+                        <td>
+
+                            <span class="fw-semibold">
+
+                                {{ cita.cabezal_placa }}
+
+                            </span>
+
+                        </td>
+
+                        <!-- ====================== -->
+                        <!-- CONTENEDOR -->
+                        <!-- ====================== -->
+                        <td>
+
+                            {{ cita.contenedor }}
+
+                        </td>
+
+                        <!-- ====================== -->
+                        <!-- NAVIERA -->
+                        <!-- ====================== -->
+                        <td>
+
+                            {{ cita.naviera }}
+
+                        </td>
+
+                        <!-- ====================== -->
+                        <!-- OPERACIÓN -->
+                        <!-- ====================== -->
+                        <td>
+
+                            {{ cita.tipo_operacion }}
+
+                        </td>
+
+                        <!-- ====================== -->
+                        <!-- ESTADO -->
+                        <!-- ====================== -->
+                        <td>
+
+                            {% if cita.estado == 'Pendiente' %}
+
+                                <span class="badge-pendiente">
+
+                                    {{ cita.estado }}
+
+                                </span>
+
+                            {% elif cita.estado == 'Completada' %}
+
+                                <span class="badge-completada">
+
+                                    {{ cita.estado }}
+
+                                </span>
+
+                            {% elif cita.estado == 'Vencida' %}
+
+                                <span class="badge-vencida">
+
+                                    {{ cita.estado }}
+
+                                </span>
+
+                            {% else %}
+
+                                <span class="badge bg-secondary">
+
+                                    {{ cita.estado }}
+
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+                        <!-- ====================== -->
+                        <!-- ACCIONES -->
+                        <!-- ====================== -->
+                        {% if current_user.role == 'ADMIN' %}
+
+                        <td>
+
+                            <div class="d-flex justify-content-center gap-2">
+
+                                <!-- EDITAR -->
+                                <a
+                                    href="{{ url_for('citas.editar_cita', cita_id=cita.id) }}"
+                                    class="btn btn-outline-primary btn-sm"
+                                    title="Editar"
+                                >
+
+                                    <i class="bi bi-pencil-fill"></i>
+
+                                </a>
+
+                                <!-- ELIMINAR -->
+                                <form
+                                    method="POST"
+                                    action="{{ url_for('citas.eliminar_cita', cita_id=cita.id) }}"
+                                >
+
+                                    <button
+                                        type="submit"
+                                        class="btn btn-outline-danger btn-sm"
+                                        title="Eliminar"
+                                        onclick="return confirm('¿Desea eliminar esta cita permanentemente?')"
+                                    >
+
+                                        <i class="bi bi-trash-fill"></i>
+
+                                    </button>
+
+                                </form>
+
+                            </div>
+
+                        </td>
+
+                        {% endif %}
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        {% else %}
+
+        <!-- ========================================== -->
+        <!-- VACÍO -->
+        <!-- ========================================== -->
+        <div class="text-center py-5">
+
+            <i
+                class="bi bi-calendar-x-fill text-secondary"
+                style="font-size: 4rem;"
+            ></i>
+
+            <h4 class="mt-4 fw-bold">
+
+                No hay citas pendientes
+
+            </h4>
+
+            <p class="text-muted">
+
+                Todo está al día.
+
+            </p>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+{% endblock %}
 
 
 

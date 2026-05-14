@@ -1,76 +1,414 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <title>Crear Cita</title>
-</head>
-<body>
-    <div class="container mt-5">
-        <!-- Botón Inicio -->
-        <div class="mb-3">
-            <a href="/" class="btn btn-info">Inicio</a>
+{% extends "base.html" %}
+
+{% block title %}
+    Crear Cita | ATM Citas
+{% endblock %}
+
+{% block content %}
+
+<div class="card card-custom">
+
+    <div class="card-header-custom d-flex justify-content-between align-items-center">
+        <div>
+            <i class="bi bi-calendar-plus-fill me-2"></i>
+            Crear Citas
         </div>
-        <h1 class="text-center">Crear Cita</h1>
-        <form method="POST" action="/crear-cita">
-            <div class="mb-3">
-                <label for="contenedor" class="form-label">Contenedor o BK</label>
-                <input type="text" id="contenedor" name="contenedor" class="form-control" required>
+
+        <a href="{{ url_for('citas.home') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i>
+            Volver
+        </a>
+    </div>
+
+    <div class="card-body p-4">
+
+        <div class="alert alert-info rounded-4">
+            <strong>Predio activo:</strong>
+            {{ active_predio_nombre }}
+        </div>
+
+        <ul class="nav nav-pills mb-4" role="tablist">
+
+            <li class="nav-item" role="presentation">
+                <button
+                    class="nav-link active"
+                    data-bs-toggle="pill"
+                    data-bs-target="#citaIndividual"
+                    type="button"
+                >
+                    Una Cita
+                </button>
+            </li>
+
+            <li class="nav-item" role="presentation">
+                <button
+                    class="nav-link"
+                    data-bs-toggle="pill"
+                    data-bs-target="#citasMasivas"
+                    type="button"
+                >
+                    Varias Citas
+                </button>
+            </li>
+
+        </ul>
+
+        <div class="tab-content">
+
+            <!-- ================================================== -->
+            <!-- CITA INDIVIDUAL -->
+            <!-- ================================================== -->
+            <div class="tab-pane fade show active" id="citaIndividual">
+
+                <form method="POST" action="{{ url_for('citas.crear_cita') }}">
+
+                    <div class="row g-3">
+
+                        <div class="col-md-6">
+                            <label class="form-label">Contenedor o BK</label>
+                            <input type="text" name="contenedor" class="form-control" required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Nombre del Chofer</label>
+                            <input type="text" name="chofer_nombre" class="form-control" required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Cédula del Chofer</label>
+                            <input type="text" name="chofer_cedula" class="form-control" required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Placa del Cabezal</label>
+                            <input type="text" name="cabezal_placa" class="form-control" required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Naviera</label>
+                            <select name="naviera" class="form-select" required>
+                                <option value="" disabled selected>Seleccione</option>
+                                <option value="COSCO">COSCO</option>
+                                <option value="ONE">ONE</option>
+                                <option value="OOCL">OOCL</option>
+                                <option value="VASI">VASI</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Estado del Contenedor</label>
+                            <select name="estado_contenedor" class="form-select" required>
+                                <option value="" disabled selected>Seleccione</option>
+                                <option value="Cargado">Cargado</option>
+                                <option value="Vacio">Vacío</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Tipo de Operación</label>
+                            <select name="tipo_operacion" class="form-select" required>
+                                <option value="" disabled selected>Seleccione</option>
+                                <option value="Retira">Retira</option>
+                                <option value="Entrega">Entrega</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label">Fecha</label>
+                            <input type="date" name="fecha" class="form-control" required>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label">Horario</label>
+                            <select name="horario" class="form-select" required>
+                                {% for slot in time_slots %}
+                                    <option value="{{ slot }}">{{ slot }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 mt-4">
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                        Crear Cita
+                    </button>
+
+                </form>
+
             </div>
-            <div class="mb-3">
-                <label for="chofer_nombre" class="form-label">Nombre del Chofer</label>
-                <input type="text" id="chofer_nombre" name="chofer_nombre" class="form-control" required>
+
+            <!-- ================================================== -->
+            <!-- CITAS MASIVAS -->
+            <!-- ================================================== -->
+            <div class="tab-pane fade" id="citasMasivas">
+
+                <div class="alert alert-warning rounded-4">
+                    Agregue varias citas y presione <strong>Crear Citas Masivas</strong>.
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle" id="tablaCitasMasivas">
+
+                        <thead>
+                            <tr>
+                                <th>Contenedor/BK</th>
+                                <th>Chofer</th>
+                                <th>Cédula</th>
+                                <th>Placa</th>
+                                <th>Naviera</th>
+                                <th>Estado</th>
+                                <th>Operación</th>
+                                <th>Fecha</th>
+                                <th>Horario</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="citasMasivasBody"></tbody>
+
+                    </table>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-primary" onclick="agregarFilaCita()">
+                        <i class="bi bi-plus-circle"></i>
+                        Agregar Fila
+                    </button>
+
+                    <button type="button" class="btn btn-primary" onclick="enviarCitasMasivas()">
+                        <i class="bi bi-check-circle-fill"></i>
+                        Crear Citas Masivas
+                    </button>
+                </div>
+
             </div>
-            <div class="mb-3">
-                <label for="chofer_cedula" class="form-label">Cédula del Chofer</label>
-                <input type="text" id="chofer_cedula" name="chofer_cedula" class="form-control" required>
-            </div>
-            <div class="mb-3">
-                <label for="cabezal_placa" class="form-label">Placa del Cabezal</label>
-                <input type="text" id="cabezal_placa" name="cabezal_placa" class="form-control" required>
-            </div>
-            <div class="mb-3">
-                <label for="naviera" class="form-label">Naviera</label>
-                <select id="naviera" name="naviera" class="form-select" required>
-                    <option value="" disabled selected>Seleccione una naviera</option>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+
+<script>
+
+    const timeSlots = JSON.parse(
+        '{{ time_slots | tojson | safe }}'
+    );
+
+    const activePredioId = Number(
+        '{{ active_predio_id }}'
+    );
+
+    function opcionesHorario() {
+
+        return timeSlots.map(
+            slot => `<option value="${slot}">${slot}</option>`
+        ).join("");
+
+    }
+
+    function agregarFilaCita() {
+
+        const tbody = document.getElementById(
+            "citasMasivasBody"
+        );
+
+        const tr = document.createElement(
+            "tr"
+        );
+
+        tr.innerHTML = `
+            <td>
+                <input
+                    class="form-control form-control-sm"
+                    name="contenedor"
+                    required
+                >
+            </td>
+
+            <td>
+                <input
+                    class="form-control form-control-sm"
+                    name="chofer_nombre"
+                    required
+                >
+            </td>
+
+            <td>
+                <input
+                    class="form-control form-control-sm"
+                    name="chofer_cedula"
+                    required
+                >
+            </td>
+
+            <td>
+                <input
+                    class="form-control form-control-sm"
+                    name="cabezal_placa"
+                    required
+                >
+            </td>
+
+            <td>
+                <select
+                    class="form-select form-select-sm"
+                    name="naviera"
+                    required
+                >
                     <option value="COSCO">COSCO</option>
                     <option value="ONE">ONE</option>
                     <option value="OOCL">OOCL</option>
                     <option value="VASI">VASI</option>
                 </select>
-            </div>
-            <div class="mb-3">
-                <label for="estado_contenedor" class="form-label">Estado del Contenedor</label>
-                <select id="estado_contenedor" name="estado_contenedor" class="form-select" required>
-                    <option value="" disabled selected>Seleccione un estado</option>
+            </td>
+
+            <td>
+                <select
+                    class="form-select form-select-sm"
+                    name="estado_contenedor"
+                    required
+                >
                     <option value="Cargado">Cargado</option>
                     <option value="Vacio">Vacío</option>
                 </select>
-            </div>
-            <div class="mb-3">
-                <label for="tipo_operacion" class="form-label">Tipo de Operación</label>
-                <select id="tipo_operacion" name="tipo_operacion" class="form-select" required>
-                    <option value="" disabled selected>Seleccione una operación</option>
+            </td>
+
+            <td>
+                <select
+                    class="form-select form-select-sm"
+                    name="tipo_operacion"
+                    required
+                >
                     <option value="Retira">Retira</option>
                     <option value="Entrega">Entrega</option>
                 </select>
-            </div>
-            <div class="mb-3">
-                <label for="fecha" class="form-label">Fecha</label>
-                <input type="date" id="fecha" name="fecha" class="form-control" required min="{{ current_date }}">
-            </div>
-            <div class="mb-3">
-                <label for="horario" class="form-label">Horario</label>
-                <select id="horario" name="horario" class="form-select" required>
-                    {% for slot in time_slots %}
-                        <option value="{{ slot }}">{{ slot }}</option>
-                    {% endfor %}
+            </td>
+
+            <td>
+                <input
+                    type="date"
+                    class="form-control form-control-sm"
+                    name="fecha"
+                    required
+                >
+            </td>
+
+            <td>
+                <select
+                    class="form-select form-select-sm"
+                    name="horario"
+                    required
+                >
+                    ${opcionesHorario()}
                 </select>
-            </div>
-            <button type="submit" class="btn btn-primary w-100">Crear Cita</button>
-        </form>
-    </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+            </td>
+
+            <td class="text-center">
+                <button
+                    type="button"
+                    class="btn btn-outline-danger btn-sm"
+                    onclick="this.closest('tr').remove()"
+                >
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        `;
+
+        tbody.appendChild(
+            tr
+        );
+
+    }
+
+    function enviarCitasMasivas() {
+
+        const filas = document.querySelectorAll(
+            "#citasMasivasBody tr"
+        );
+
+        if (!filas.length) {
+
+            alert(
+                "Debe agregar al menos una cita."
+            );
+
+            return;
+
+        }
+
+        const citas = [];
+
+        filas.forEach(
+            fila => {
+
+                citas.push({
+                    contenedor: fila.querySelector('[name="contenedor"]').value.trim(),
+                    chofer_nombre: fila.querySelector('[name="chofer_nombre"]').value.trim(),
+                    chofer_cedula: fila.querySelector('[name="chofer_cedula"]').value.trim(),
+                    cabezal_placa: fila.querySelector('[name="cabezal_placa"]').value.trim(),
+                    naviera: fila.querySelector('[name="naviera"]').value,
+                    estado_contenedor: fila.querySelector('[name="estado_contenedor"]').value,
+                    tipo_operacion: fila.querySelector('[name="tipo_operacion"]').value,
+                    fecha: fila.querySelector('[name="fecha"]').value,
+                    horario: fila.querySelector('[name="horario"]').value,
+                    predio_id: activePredioId
+                });
+
+            }
+        );
+
+        fetch(
+            "{{ url_for('citas.crear_citas_masivas') }}",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    citas: citas
+                })
+            }
+        )
+        .then(
+            response => response.json()
+        )
+        .then(
+            data => {
+
+                if (data.success) {
+
+                    window.location.href = "{{ url_for('citas.home') }}";
+
+                } else {
+
+                    alert(
+                        "No se pudieron crear las citas."
+                    );
+
+                }
+
+            }
+        )
+        .catch(
+            () => {
+
+                alert(
+                    "Error al enviar las citas masivas."
+                );
+
+            }
+        );
+
+    }
+
+    agregarFilaCita();
+
+</script>
+
+{% endblock %}

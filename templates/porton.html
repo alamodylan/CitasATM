@@ -1,0 +1,281 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Portón | ATM Citas
+{% endblock %}
+
+{% block content %}
+
+<!-- ================================================== -->
+<!-- HEADER -->
+<!-- ================================================== -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+
+    <div>
+
+        <h2 class="fw-bold mb-1">
+            Control de Portón
+        </h2>
+
+        <p class="text-muted mb-0">
+            Gestión operativa de citas pendientes
+        </p>
+
+        <div class="mt-2">
+            <span class="badge bg-dark fs-6">
+                Predio activo:
+                {{ active_predio_nombre }}
+            </span>
+        </div>
+
+    </div>
+
+    <div class="d-flex gap-3">
+
+        <!-- ========================================== -->
+        <!-- PENDIENTES -->
+        <!-- ========================================== -->
+        <div class="card card-custom px-4 py-3 text-center">
+
+            <div class="text-muted small">
+                Pendientes
+            </div>
+
+            <div class="fs-3 fw-bold text-warning">
+                {{ stats.pendientes }}
+            </div>
+
+        </div>
+
+        <!-- ========================================== -->
+        <!-- COMPLETADAS -->
+        <!-- ========================================== -->
+        <div class="card card-custom px-4 py-3 text-center">
+
+            <div class="text-muted small">
+                Completadas
+            </div>
+
+            <div class="fs-3 fw-bold text-success">
+                {{ stats.completadas }}
+            </div>
+
+        </div>
+
+        <!-- ========================================== -->
+        <!-- VENCIDAS -->
+        <!-- ========================================== -->
+        <div class="card card-custom px-4 py-3 text-center">
+
+            <div class="text-muted small">
+                Vencidas
+            </div>
+
+            <div class="fs-3 fw-bold text-danger">
+                {{ stats.vencidas }}
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- ================================================== -->
+<!-- TABLA -->
+<!-- ================================================== -->
+<div class="card card-custom">
+
+    <div class="card-header-custom d-flex justify-content-between align-items-center">
+
+        <div>
+
+            <i class="bi bi-truck me-2"></i>
+
+            Citas Pendientes
+
+        </div>
+
+        <span class="badge bg-primary">
+            {{ citas|length }} registros
+        </span>
+
+    </div>
+
+    <div class="card-body">
+
+        {% if citas %}
+
+        <div class="table-responsive">
+
+            <table class="table table-hover align-middle">
+
+                <thead>
+
+                    <tr>
+
+                        <th>Predio</th>
+                        <th>Fecha</th>
+                        <th>Horario</th>
+                        <th>Chofer</th>
+                        <th>Placa</th>
+                        <th>Naviera</th>
+                        <th>Operación</th>
+                        <th>Estado</th>
+                        <th class="text-center">Acción</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    {% for cita in citas %}
+
+                    <tr>
+
+                        <!-- ========================== -->
+                        <!-- PREDIO -->
+                        <!-- ========================== -->
+                        <td>
+
+                            <span class="fw-semibold">
+
+                                {{ cita.predio_nombre }}
+
+                            </span>
+
+                        </td>
+
+                        <!-- ========================== -->
+                        <!-- FECHA -->
+                        <!-- ========================== -->
+                        <td>
+
+                            {{ cita.fecha }}
+
+                        </td>
+
+                        <!-- ========================== -->
+                        <!-- HORARIO -->
+                        <!-- ========================== -->
+                        <td>
+
+                            {{ cita.horario }}
+
+                        </td>
+
+                        <!-- ========================== -->
+                        <!-- CHOFER -->
+                        <!-- ========================== -->
+                        <td>
+
+                            {{ cita.chofer_nombre }}
+
+                        </td>
+
+                        <!-- ========================== -->
+                        <!-- PLACA -->
+                        <!-- ========================== -->
+                        <td>
+
+                            <span class="fw-semibold">
+
+                                {{ cita.cabezal_placa }}
+
+                            </span>
+
+                        </td>
+
+                        <!-- ========================== -->
+                        <!-- NAVIERA -->
+                        <!-- ========================== -->
+                        <td>
+
+                            {{ cita.naviera }}
+
+                        </td>
+
+                        <!-- ========================== -->
+                        <!-- OPERACIÓN -->
+                        <!-- ========================== -->
+                        <td>
+
+                            {{ cita.tipo_operacion }}
+
+                        </td>
+
+                        <!-- ========================== -->
+                        <!-- ESTADO -->
+                        <!-- ========================== -->
+                        <td>
+
+                            <span class="badge-pendiente">
+
+                                {{ cita.estado }}
+
+                            </span>
+
+                        </td>
+
+                        <!-- ========================== -->
+                        <!-- ACCIÓN -->
+                        <!-- ========================== -->
+                        <td class="text-center">
+
+                            <a
+                                href="{{ url_for('porton.porton_cita_detail', cita_id=cita.id) }}"
+                                class="btn btn-primary btn-sm"
+                            >
+
+                                <i class="bi bi-box-arrow-up-right"></i>
+
+                                Atender
+
+                            </a>
+
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        {% else %}
+
+        <!-- ========================================== -->
+        <!-- VACÍO -->
+        <!-- ========================================== -->
+        <div class="text-center py-5">
+
+            <i
+                class="bi bi-check-circle-fill text-success"
+                style="font-size: 4rem;"
+            ></i>
+
+            <h4 class="mt-4 fw-bold">
+
+                No hay citas pendientes
+
+            </h4>
+
+            <p class="text-muted">
+
+                Todas las citas ya fueron atendidas.
+
+            </p>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+{% endblock %}

@@ -1,44 +1,135 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <title>Ver Citas</title>
-</head>
-<body>
-    <div class="container mt-5">
-        <h1 class="text-center">Listado de Citas</h1>
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Contenedor</th>
-                    <th>Chofer</th>
-                    <th>Cédula</th>
-                    <th>Placa</th>
-                    <th>Naviera</th>
-                    <th>Fecha</th>
-                    <th>Horario</th>
-                    <th>Estado</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for cita in citas %}
-                <tr>
-                    <td>{{ cita['id'] }}</td>
-                    <td>{{ cita['contenedor'] }}</td>
-                    <td>{{ cita['chofer_nombre'] }}</td>
-                    <td>{{ cita['chofer_cedula'] }}</td>
-                    <td>{{ cita['cabezal_placa'] }}</td>
-                    <td>{{ cita['naviera'] }}</td>
-                    <td>{{ cita['fecha'] }}</td>
-                    <td>{{ cita['horario'] }}</td>
-                    <td>{{ cita['estado'] }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+{% extends "base.html" %}
+
+{% block title %}
+    Ver Citas | ATM Citas
+{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+
+    <div>
+        <h2 class="fw-bold mb-1">
+            Listado de Citas
+        </h2>
+
+        <p class="text-muted mb-0">
+            Consulta general de citas registradas
+        </p>
+
+        <div class="mt-2">
+            <span class="badge bg-dark fs-6">
+                Predio activo:
+                {{ active_predio_nombre }}
+            </span>
+        </div>
     </div>
-</body>
-</html>
+
+    <a href="{{ url_for('citas.home') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i>
+        Volver
+    </a>
+
+</div>
+
+<div class="card card-custom">
+
+    <div class="card-header-custom d-flex justify-content-between align-items-center">
+        <div>
+            <i class="bi bi-list-ul me-2"></i>
+            Citas Registradas
+        </div>
+
+        <span class="badge bg-primary">
+            {{ citas|length }} registros
+        </span>
+    </div>
+
+    <div class="card-body">
+
+        {% if citas %}
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Contenedor/BK</th>
+                        <th>Chofer</th>
+                        <th>Cédula</th>
+                        <th>Placa</th>
+                        <th>Naviera</th>
+                        <th>Fecha</th>
+                        <th>Horario</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for cita in citas %}
+                    <tr>
+                        <td>
+                            <span class="fw-semibold">
+                                #{{ cita.id }}
+                            </span>
+                        </td>
+
+                        <td>{{ cita.contenedor }}</td>
+                        <td>{{ cita.chofer_nombre }}</td>
+                        <td>{{ cita.chofer_cedula }}</td>
+                        <td>{{ cita.cabezal_placa }}</td>
+                        <td>{{ cita.naviera }}</td>
+                        <td>{{ cita.fecha }}</td>
+                        <td>{{ cita.horario }}</td>
+
+                        <td>
+                            {% if cita.estado == 'Pendiente' %}
+                                <span class="badge-pendiente">
+                                    {{ cita.estado }}
+                                </span>
+                            {% elif cita.estado == 'Completada' %}
+                                <span class="badge-completada">
+                                    {{ cita.estado }}
+                                </span>
+                            {% elif cita.estado == 'Vencida' %}
+                                <span class="badge-vencida">
+                                    {{ cita.estado }}
+                                </span>
+                            {% else %}
+                                <span class="badge bg-secondary">
+                                    {{ cita.estado }}
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+
+            </table>
+        </div>
+
+        {% else %}
+
+        <div class="text-center py-5">
+            <i
+                class="bi bi-calendar-x-fill text-secondary"
+                style="font-size: 4rem;"
+            ></i>
+
+            <h4 class="mt-4 fw-bold">
+                No hay citas registradas
+            </h4>
+
+            <p class="text-muted">
+                No existen citas para mostrar.
+            </p>
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+{% endblock %}

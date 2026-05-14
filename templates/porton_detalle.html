@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Atención de Cita | ATM Citas
+{% endblock %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+
+    <div class="col-xl-8">
+
+        <!-- ========================================== -->
+        <!-- HEADER -->
+        <!-- ========================================== -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+
+            <div>
+
+                <h2 class="fw-bold mb-1">
+
+                    Atención de Cita
+
+                </h2>
+
+                <p class="text-muted mb-0">
+
+                    Registro de ingreso / salida de portón
+
+                </p>
+
+            </div>
+
+            <a
+                href="{{ url_for('porton.porton_home') }}"
+                class="btn btn-outline-secondary"
+            >
+
+                <i class="bi bi-arrow-left"></i>
+
+                Volver
+
+            </a>
+
+        </div>
+
+        <!-- ========================================== -->
+        <!-- CARD -->
+        <!-- ========================================== -->
+        <div class="card card-custom">
+
+            <div class="card-header-custom d-flex justify-content-between align-items-center">
+
+                <div>
+
+                    <i class="bi bi-truck me-2"></i>
+
+                    Cita #{{ cita.id }}
+
+                </div>
+
+                {% if cita.estado == 'Pendiente' %}
+                    <span class="badge-pendiente">
+                        {{ cita.estado }}
+                    </span>
+                {% elif cita.estado == 'Completada' %}
+                    <span class="badge-completada">
+                        {{ cita.estado }}
+                    </span>
+                {% elif cita.estado == 'Vencida' %}
+                    <span class="badge-vencida">
+                        {{ cita.estado }}
+                    </span>
+                {% else %}
+                    <span class="badge bg-secondary">
+                        {{ cita.estado }}
+                    </span>
+                {% endif %}
+
+            </div>
+
+            <div class="card-body p-4">
+
+                <!-- ================================== -->
+                <!-- INFO GENERAL -->
+                <!-- ================================== -->
+                <div class="row g-4 mb-4">
+
+                    <!-- ============================== -->
+                    <!-- PREDIO -->
+                    <!-- ============================== -->
+                    <div class="col-md-4">
+
+                        <div class="border rounded-4 p-3 bg-light h-100">
+
+                            <div class="text-muted small mb-1">
+
+                                Predio
+
+                            </div>
+
+                            <div class="fw-bold fs-5">
+
+                                {{ cita.predio_nombre }}
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <!-- ============================== -->
+                    <!-- FECHA -->
+                    <!-- ============================== -->
+                    <div class="col-md-4">
+
+                        <div class="border rounded-4 p-3 bg-light h-100">
+
+                            <div class="text-muted small mb-1">
+
+                                Fecha
+
+                            </div>
+
+                            <div class="fw-bold fs-5">
+
+                                {{ cita.fecha }}
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <!-- ============================== -->
+                    <!-- HORARIO -->
+                    <!-- ============================== -->
+                    <div class="col-md-4">
+
+                        <div class="border rounded-4 p-3 bg-light h-100">
+
+                            <div class="text-muted small mb-1">
+
+                                Horario
+
+                            </div>
+
+                            <div class="fw-bold fs-5">
+
+                                {{ cita.horario }}
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <!-- ================================== -->
+                <!-- DATOS CHOFER -->
+                <!-- ================================== -->
+                <div class="row g-4 mb-4">
+
+                    <!-- ============================== -->
+                    <!-- CHOFER -->
+                    <!-- ============================== -->
+                    <div class="col-md-6">
+
+                        <div class="border rounded-4 p-3 bg-light h-100">
+
+                            <div class="text-muted small mb-1">
+
+                                Chofer
+
+                            </div>
+
+                            <div class="fw-bold fs-5">
+
+                                {{ cita.chofer_nombre }}
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <!-- ============================== -->
+                    <!-- PLACA -->
+                    <!-- ============================== -->
+                    <div class="col-md-6">
+
+                        <div class="border rounded-4 p-3 bg-light h-100">
+
+                            <div class="text-muted small mb-1">
+
+                                Placa
+
+                            </div>
+
+                            <div class="fw-bold fs-5">
+
+                                {{ cita.cabezal_placa }}
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <!-- ================================== -->
+                <!-- FORM -->
+                <!-- ================================== -->
+                <form
+                    method="POST"
+                    action="{{ url_for('porton.confirmar_cita_porton', cita_id=cita.id) }}"
+                >
+
+                    <div class="row g-4">
+
+                        <!-- ========================== -->
+                        <!-- CONTENEDOR -->
+                        <!-- ========================== -->
+                        <div class="col-md-6">
+
+                            <label class="form-label fw-semibold">
+
+                                Número de Contenedor
+
+                            </label>
+
+                            <input
+                                type="text"
+                                name="contenedor_registrado"
+                                class="form-control form-control-lg"
+                                required
+                                autocomplete="off"
+                            >
+
+                        </div>
+
+                        <!-- ========================== -->
+                        <!-- SERVICIO TERMINAL -->
+                        <!-- ========================== -->
+                        <div class="col-md-6">
+
+                            <label class="form-label fw-semibold">
+
+                                Servicio Terminal / Boleta
+
+                            </label>
+
+                            <input
+                                type="text"
+                                name="servicio_terminal"
+                                class="form-control form-control-lg"
+                                required
+                                autocomplete="off"
+                            >
+
+                        </div>
+
+                    </div>
+
+                    <!-- ============================== -->
+                    <!-- BOTÓN -->
+                    <!-- ============================== -->
+                    <div class="d-flex justify-content-end mt-5">
+
+                        <button
+                            type="submit"
+                            class="btn btn-success btn-lg px-5"
+                        >
+
+                            <i class="bi bi-check-circle-fill me-2"></i>
+
+                            Confirmar Atención
+
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

@@ -1,104 +1,307 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <title>Dashboard - Administradores</title>
-</head>
-<body>
-    <div class="container mt-5">
-        <h1 class="text-center">Dashboard - Estadísticas</h1>
-        <a href="/" class="btn btn-info mb-3">Inicio</a>
+{% extends "base.html" %}
 
-        <!-- Formulario de Filtros -->
-        <form method="GET" action="/dashboard" class="mb-4">
-            <div class="row g-2">
-                <div class="col-md-2">
-                    <input type="date" name="fecha" class="form-control" value="{{ filtros.fecha }}">
+{% block title %}
+    Dashboard | ATM Citas
+{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+
+    <div>
+        <h2 class="fw-bold mb-1">
+            Dashboard - Estadísticas
+        </h2>
+
+        <p class="text-muted mb-0">
+            Resumen y filtros de citas por predio activo
+        </p>
+
+        <div class="mt-2">
+            <span class="badge bg-dark fs-6">
+                Predio activo:
+                {{ active_predio_nombre }}
+            </span>
+        </div>
+    </div>
+
+    <a href="{{ url_for('citas.home') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i>
+        Volver
+    </a>
+
+</div>
+
+<div class="row g-4 mb-4">
+
+    <div class="col-md-3">
+        <div class="card card-custom h-100">
+            <div class="card-body">
+                <div class="text-muted">Total</div>
+                <div class="fs-2 fw-bold text-primary">
+                    {{ total_citas }}
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card card-custom h-100">
+            <div class="card-body">
+                <div class="text-muted">Pendientes</div>
+                <div class="fs-2 fw-bold text-warning">
+                    {{ pendientes }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card card-custom h-100">
+            <div class="card-body">
+                <div class="text-muted">Completadas</div>
+                <div class="fs-2 fw-bold text-success">
+                    {{ completadas }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card card-custom h-100">
+            <div class="card-body">
+                <div class="text-muted">Vencidas</div>
+                <div class="fs-2 fw-bold text-danger">
+                    {{ vencidas }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="card card-custom mb-4">
+
+    <div class="card-header-custom">
+        <i class="bi bi-funnel-fill me-2"></i>
+        Filtros
+    </div>
+
+    <div class="card-body">
+
+        <form method="GET" action="{{ url_for('dashboard.dashboard') }}">
+
+            <div class="row g-3">
+
                 <div class="col-md-2">
+                    <label class="form-label">Fecha</label>
+                    <input
+                        type="date"
+                        name="fecha"
+                        class="form-control"
+                        value="{{ filtros.fecha }}"
+                    >
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label">Naviera</label>
                     <select name="naviera" class="form-select">
-                        <option value="">Todas las Navieras</option>
+                        <option value="">Todas</option>
                         <option value="COSCO" {% if filtros.naviera == "COSCO" %}selected{% endif %}>COSCO</option>
                         <option value="ONE" {% if filtros.naviera == "ONE" %}selected{% endif %}>ONE</option>
                         <option value="OOCL" {% if filtros.naviera == "OOCL" %}selected{% endif %}>OOCL</option>
                         <option value="VASI" {% if filtros.naviera == "VASI" %}selected{% endif %}>VASI</option>
                     </select>
                 </div>
+
                 <div class="col-md-2">
+                    <label class="form-label">Operación</label>
                     <select name="tipo_operacion" class="form-select">
-                        <option value="">Todos los Movimientos</option>
+                        <option value="">Todas</option>
                         <option value="Retira" {% if filtros.tipo_operacion == "Retira" %}selected{% endif %}>Retira</option>
                         <option value="Entrega" {% if filtros.tipo_operacion == "Entrega" %}selected{% endif %}>Entrega</option>
                     </select>
                 </div>
+
                 <div class="col-md-2">
+                    <label class="form-label">Horario</label>
                     <select name="horario" class="form-select">
-                        <option value="">Todos los Horarios</option>
-                        {% for horario in horarios %}
-                        <option value="{{ horario }}" {% if filtros.horario == horario %}selected{% endif %}>{{ horario }}</option>
+                        <option value="">Todos</option>
+
+                        {% for item in horarios %}
+                            <option
+                                value="{{ item.horario }}"
+                                {% if filtros.horario == item.horario %}selected{% endif %}
+                            >
+                                {{ item.horario }}
+                            </option>
                         {% endfor %}
+
                     </select>
                 </div>
+
                 <div class="col-md-2">
+                    <label class="form-label">Estado Cita</label>
                     <select name="estado" class="form-select">
-                        <option value="">Todos los Estados</option>
+                        <option value="">Todos</option>
                         <option value="Pendiente" {% if filtros.estado == "Pendiente" %}selected{% endif %}>Pendiente</option>
                         <option value="Completada" {% if filtros.estado == "Completada" %}selected{% endif %}>Completada</option>
                         <option value="Vencida" {% if filtros.estado == "Vencida" %}selected{% endif %}>Vencida</option>
                     </select>
                 </div>
+
                 <div class="col-md-2">
-                    <select name="estado_contenedor" class="form-select"> <!-- Nuevo filtro -->
-                        <option value="">Todos los Estados</option>
+                    <label class="form-label">Estado Cont.</label>
+                    <select name="estado_contenedor" class="form-select">
+                        <option value="">Todos</option>
                         <option value="Cargado" {% if filtros.estado_contenedor == "Cargado" %}selected{% endif %}>Cargado</option>
                         <option value="Vacio" {% if filtros.estado_contenedor == "Vacio" %}selected{% endif %}>Vacío</option>
                     </select>
                 </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary">Filtrar</button>
-                </div>
+
             </div>
+
+            <div class="d-flex gap-2 mt-4">
+
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-search me-2"></i>
+                    Filtrar
+                </button>
+
+                <a href="{{ url_for('dashboard.dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle me-2"></i>
+                    Limpiar
+                </a>
+
+            </div>
+
         </form>
 
-        <!-- Tabla de Citas Filtradas -->
-        <h4>Citas Filtradas</h4>
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Contenedor o BK</th>
-                    <th>Chofer</th>
-                    <th>Naviera</th>
-                    <th>Fecha</th>
-                    <th>Horario</th>
-                    <th>Estado</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for cita in citas_filtradas %}
-                <tr>
-                    <td>{{ cita.id }}</td>
-                    <td>{{ cita.contenedor }}</td>
-                    <td>{{ cita.chofer_nombre }}</td>
-                    <td>{{ cita.naviera }}</td>
-                    <td>{{ cita.fecha }}</td>
-                    <td>{{ cita.horario }}</td>
-                    <td>{{ cita.estado }}</td>
-                </tr>
-                {% endfor %}
-                {% if not citas_filtradas %}
-                <tr>
-                    <td colspan="7" class="text-center">No se encontraron resultados para los filtros seleccionados.</td>
-                </tr>
-                {% endif %}
-            </tbody>
-        </table>
-
-        <!-- Botones de Exportación -->
-        <a href="/exportar-todas-citas" class="btn btn-primary mb-3">Exportar Listado Completo</a>
-        <a href="/exportar-estadisticas?{{ request.query_string.decode('utf-8') }}" class="btn btn-secondary mb-3">Exportar Estadísticas Filtradas</a>
     </div>
-</body>
-</html>
+
+</div>
+
+<div class="card card-custom">
+
+    <div class="card-header-custom d-flex justify-content-between align-items-center">
+
+        <div>
+            <i class="bi bi-table me-2"></i>
+            Citas Filtradas
+        </div>
+
+        <span class="badge bg-primary">
+            {{ citas|length }} registros
+        </span>
+
+    </div>
+
+    <div class="card-body">
+
+        {% if citas %}
+
+        <div class="table-responsive">
+
+            <table class="table table-hover align-middle">
+
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Predio</th>
+                        <th>Contenedor/BK</th>
+                        <th>Chofer</th>
+                        <th>Naviera</th>
+                        <th>Fecha</th>
+                        <th>Horario</th>
+                        <th>Operación</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for cita in citas %}
+
+                    <tr>
+                        <td>{{ cita.id }}</td>
+                        <td>{{ cita.predio_nombre }}</td>
+                        <td>{{ cita.contenedor }}</td>
+                        <td>{{ cita.chofer_nombre }}</td>
+                        <td>{{ cita.naviera }}</td>
+                        <td>{{ cita.fecha }}</td>
+                        <td>{{ cita.horario }}</td>
+                        <td>{{ cita.tipo_operacion }}</td>
+
+                        <td>
+                            {% if cita.estado == 'Pendiente' %}
+                                <span class="badge-pendiente">
+                                    {{ cita.estado }}
+                                </span>
+                            {% elif cita.estado == 'Completada' %}
+                                <span class="badge-completada">
+                                    {{ cita.estado }}
+                                </span>
+                            {% elif cita.estado == 'Vencida' %}
+                                <span class="badge-vencida">
+                                    {{ cita.estado }}
+                                </span>
+                            {% else %}
+                                <span class="badge bg-secondary">
+                                    {{ cita.estado }}
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        {% else %}
+
+        <div class="text-center py-5">
+            <i
+                class="bi bi-search text-secondary"
+                style="font-size: 4rem;"
+            ></i>
+
+            <h4 class="mt-4 fw-bold">
+                No se encontraron resultados
+            </h4>
+
+            <p class="text-muted">
+                No hay citas que coincidan con los filtros seleccionados.
+            </p>
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+<div class="d-flex gap-2 mt-4">
+
+    <a
+        href="{{ url_for('exports.exportar_todas_citas') }}"
+        class="btn btn-primary"
+    >
+        <i class="bi bi-file-earmark-excel-fill me-2"></i>
+        Exportar Listado Completo
+    </a>
+
+    <a
+        href="{{ url_for('export.exportar_estadisticas') }}?{{ request.query_string.decode('utf-8') }}"
+        class="btn btn-outline-secondary"
+    >
+        <i class="bi bi-download me-2"></i>
+        Exportar Estadísticas Filtradas
+    </a>
+
+</div>
+
+{% endblock %}
