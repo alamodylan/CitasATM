@@ -4,13 +4,51 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    >
 
     <title>
         {% block title %}
             ATM Citas
         {% endblock %}
     </title>
+
+    <!-- ================================================== -->
+    <!-- PWA CONFIG -->
+    <!-- ================================================== -->
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+
+    <meta name="theme-color" content="#003366">
+    <meta name="background-color" content="#f4f6f9">
+
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="ATM Citas">
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="ATM Citas">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <link
+        rel="apple-touch-icon"
+        href="{{ url_for('static', filename='img/icon-192.png') }}"
+    >
+
+    <link
+        rel="icon"
+        type="image/png"
+        sizes="192x192"
+        href="{{ url_for('static', filename='img/icon-192.png') }}"
+    >
+
+    <link
+        rel="icon"
+        type="image/png"
+        sizes="512x512"
+        href="{{ url_for('static', filename='img/icon-512.png') }}"
+    >
 
     <!-- ================================================== -->
     <!-- BOOTSTRAP -->
@@ -55,6 +93,8 @@
             background-color: #f4f6f9;
             font-family: 'Inter', sans-serif;
             min-height: 100vh;
+            min-height: 100dvh;
+            overscroll-behavior-y: none;
         }
 
         .navbar-custom {
@@ -170,6 +210,25 @@
             object-fit: contain;
         }
 
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 18px 14px 32px 14px;
+            }
+
+            .navbar-brand span {
+                font-size: 1rem;
+            }
+
+            .logo-navbar {
+                width: 36px;
+                height: 36px;
+            }
+
+            .table-responsive {
+                border-radius: 14px;
+            }
+        }
+
     </style>
 
     {% block extra_css %}{% endblock %}
@@ -189,6 +248,7 @@
                 <img
                     src="{{ url_for('static', filename='img/LogoAlamo.png') }}"
                     class="logo-navbar"
+                    alt="ATM Citas"
                 >
 
                 <span>
@@ -202,6 +262,9 @@
                 type="button"
                 data-bs-toggle="collapse"
                 data-bs-target="#navbarATM"
+                aria-controls="navbarATM"
+                aria-expanded="false"
+                aria-label="Abrir menú"
             >
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -212,9 +275,6 @@
 
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-4">
 
-                    <!-- ============================== -->
-                    <!-- INICIO -->
-                    <!-- ============================== -->
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('citas.home') }}">
                             <i class="bi bi-house-door-fill"></i>
@@ -222,9 +282,6 @@
                         </a>
                     </li>
 
-                    <!-- ============================== -->
-                    <!-- DASHBOARD -->
-                    <!-- ============================== -->
                     {% if current_user.role in ['ADMIN', 'PREDIO'] %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('dashboard.dashboard') }}">
@@ -234,9 +291,6 @@
                     </li>
                     {% endif %}
 
-                    <!-- ============================== -->
-                    <!-- PORTÓN -->
-                    <!-- ============================== -->
                     {% if current_user.role in ['ADMIN', 'GUARDA'] %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('porton.porton_home') }}">
@@ -246,9 +300,6 @@
                     </li>
                     {% endif %}
 
-                    <!-- ============================== -->
-                    <!-- USUARIOS -->
-                    <!-- ============================== -->
                     {% if current_user.role == 'ADMIN' %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('users.usuarios') }}">
@@ -260,9 +311,6 @@
 
                 </ul>
 
-                <!-- ============================== -->
-                <!-- USER INFO -->
-                <!-- ============================== -->
                 <div class="d-flex align-items-center gap-3 text-white">
 
                     <div class="text-end">
@@ -280,6 +328,7 @@
                     <a
                         href="{{ url_for('auth.logout') }}"
                         class="btn btn-outline-light btn-sm"
+                        title="Cerrar sesión"
                     >
                         <i class="bi bi-box-arrow-right"></i>
                     </a>
@@ -307,14 +356,9 @@
         <div class="d-flex align-items-center gap-3 flex-wrap">
 
             <div class="fw-semibold text-muted me-2">
-
                 Predio Activo:
-
             </div>
 
-            <!-- ========================================== -->
-            <!-- PREDIOS DINÁMICOS -->
-            <!-- ========================================== -->
             {% for predio in predios_disponibles %}
 
             <a
@@ -338,15 +382,10 @@
 
             {% endfor %}
 
-            <!-- ========================================== -->
-            <!-- LABEL -->
-            <!-- ========================================== -->
             <div class="ms-auto">
 
                 <span class="badge bg-dark px-3 py-2">
-
                     {{ active_predio_nombre }}
-
                 </span>
 
             </div>
@@ -362,9 +401,6 @@
     <!-- ================================================== -->
     <div class="container-fluid main-container px-4">
 
-        <!-- ============================================== -->
-        <!-- FLASH MESSAGES -->
-        <!-- ============================================== -->
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
 
@@ -381,9 +417,6 @@
             {% endif %}
         {% endwith %}
 
-        <!-- ============================================== -->
-        <!-- CONTENT -->
-        <!-- ============================================== -->
         {% block content %}
         {% endblock %}
 
@@ -401,6 +434,24 @@
     <!-- ================================================== -->
     <script
         src="{{ url_for('static', filename='js/app.js') }}">
+    </script>
+
+    <!-- ================================================== -->
+    <!-- SERVICE WORKER PWA -->
+    <!-- ================================================== -->
+    <script>
+        if ("serviceWorker" in navigator) {
+            window.addEventListener("load", function () {
+                navigator.serviceWorker
+                    .register("{{ url_for('static', filename='service-worker.js') }}")
+                    .then(function (registration) {
+                        console.log("PWA activa:", registration.scope);
+                    })
+                    .catch(function (error) {
+                        console.error("Error registrando Service Worker:", error);
+                    });
+            });
+        }
     </script>
 
     {% block extra_js %}{% endblock %}
