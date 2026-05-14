@@ -19,7 +19,10 @@ class Config:
     DATABASE_URL = os.environ.get(
         "DATABASE_URL"
     )
-
+    print(
+        "DATABASE_URL EXISTS:",
+        bool(DATABASE_URL)
+    )
     # =====================================================
     # APP
     # =====================================================
