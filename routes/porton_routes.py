@@ -37,7 +37,7 @@ porton_bp = Blueprint(
 # =========================================================
 @porton_bp.route("/porton")
 @login_required
-@role_required(["GUARDA", "ADMIN"])
+@role_required(["GUARDA", "ADMIN", "SUPERADMIN"])
 def porton_home():
 
     predio_id = session.get(
@@ -91,7 +91,7 @@ def porton_home():
     "/porton/cita/<int:cita_id>"
 )
 @login_required
-@role_required(["GUARDA", "ADMIN"])
+@role_required(["GUARDA", "ADMIN", "SUPERADMIN"])
 def porton_cita_detail(cita_id):
 
     cita = get_porton_cita_detail(
@@ -139,7 +139,7 @@ def porton_cita_detail(cita_id):
     methods=["POST"]
 )
 @login_required
-@role_required(["GUARDA", "ADMIN"])
+@role_required(["GUARDA", "ADMIN", "SUPERADMIN"])
 def confirmar_cita_porton(cita_id):
 
     cita = get_porton_cita_detail(

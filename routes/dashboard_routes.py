@@ -35,7 +35,7 @@ dashboard_bp = Blueprint(
 # =========================================================
 @dashboard_bp.route("/dashboard")
 @login_required
-@role_required(["ADMIN", "PREDIO"])
+@role_required(["SUPERADMIN","ADMIN", "PREDIO"])
 def dashboard():
 
     # =====================================================
