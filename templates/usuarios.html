@@ -133,7 +133,13 @@
                         <!-- ========================== -->
                         <td>
 
-                            {% if user.role == "ADMIN" %}
+                            {% if user.role == "SUPERADMIN" %}
+
+                                <span class="badge bg-dark">
+                                    SUPERADMIN
+                                </span>
+
+                            {% elif user.role == "ADMIN" %}
 
                                 <span class="badge bg-danger">
                                     ADMIN
