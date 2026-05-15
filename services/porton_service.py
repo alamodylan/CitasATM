@@ -28,7 +28,7 @@ def get_pending_citas_for_porton(user_predios):
 
     fecha_hoy = datetime.now(
         zona_local
-    ).date()
+    ).strftime("%Y-%m-%d")
 
     query = """
         SELECT
