@@ -209,6 +209,9 @@
                         <th>#</th>
                         <th>Predio</th>
                         <th>Contenedor/BK</th>
+                        <th>Contenedor ingresado portón</th>
+                        <th>Boleta servicio terminal</th>
+                        <th>Fecha/Hora confirmación</th>
                         <th>Chofer</th>
                         <th>Naviera</th>
                         <th>Fecha</th>
@@ -226,6 +229,23 @@
                         <td>{{ cita.id }}</td>
                         <td>{{ cita.predio_nombre }}</td>
                         <td>{{ cita.contenedor }}</td>
+
+                        <td>
+                            {{ cita.contenedor_registrado or '-' }}
+                        </td>
+
+                        <td>
+                            {{ cita.servicio_terminal or '-' }}
+                        </td>
+
+                        <td>
+                            {% if cita.fecha_confirmacion_cr %}
+                                {{ cita.fecha_confirmacion_cr.strftime('%d/%m/%Y %H:%M:%S') }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+
                         <td>{{ cita.chofer_nombre }}</td>
                         <td>{{ cita.naviera }}</td>
                         <td>{{ cita.fecha }}</td>

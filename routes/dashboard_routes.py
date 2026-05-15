@@ -1,5 +1,8 @@
 # routes/dashboard_routes.py
 
+from datetime import timezone
+from zoneinfo import ZoneInfo
+
 from flask import (
     Blueprint,
     render_template,
@@ -168,6 +171,35 @@ def dashboard():
         tuple(params),
         fetchall=True
     )
+
+    # =====================================================
+    # FECHA/HORA CONFIRMACIÓN EN HORA COSTA RICA
+    # =====================================================
+    cr_tz = ZoneInfo("America/Costa_Rica")
+
+    for cita in citas:
+
+        fecha_confirmacion = cita.get(
+            "fecha_confirmacion"
+        )
+
+        if fecha_confirmacion:
+
+            if fecha_confirmacion.tzinfo is None:
+
+                fecha_confirmacion = fecha_confirmacion.replace(
+                    tzinfo=timezone.utc
+                )
+
+            cita["fecha_confirmacion_cr"] = (
+                fecha_confirmacion.astimezone(
+                    cr_tz
+                )
+            )
+
+        else:
+
+            cita["fecha_confirmacion_cr"] = None
 
     # =====================================================
     # ESTADÍSTICAS
