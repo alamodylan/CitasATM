@@ -1,5 +1,8 @@
 # routes/export_routes.py
 
+from datetime import timezone
+from zoneinfo import ZoneInfo
+
 from io import BytesIO
 
 from flask import (
@@ -171,6 +174,11 @@ def exportar_citas():
     )
 
     # =====================================================
+    # TIMEZONE COSTA RICA
+    # =====================================================
+    cr_tz = ZoneInfo("America/Costa_Rica")
+
+    # =====================================================
     # EXCEL
     # =====================================================
     wb = Workbook()
@@ -188,6 +196,7 @@ def exportar_citas():
         "Contenedor",
         "Contenedor Registrado",
         "Servicio Terminal",
+        "Fecha/Hora Confirmación",
         "Chofer",
         "Cédula",
         "Placa",
@@ -217,6 +226,15 @@ def exportar_citas():
             cita["contenedor_registrado"],
 
             cita["servicio_terminal"],
+
+            (
+                cita["fecha_confirmacion"]
+                .replace(tzinfo=timezone.utc)
+                .astimezone(cr_tz)
+                .strftime("%d/%m/%Y %H:%M:%S")
+            )
+            if cita["fecha_confirmacion"]
+            else "-",
 
             cita["chofer_nombre"],
 
@@ -264,7 +282,7 @@ def exportar_citas():
 
 # =========================================================
 # EXPORTAR TODO
-# =========================================================
+# =====================================================
 @export_bp.route("/exportar-todas-citas")
 @login_required
 @role_required(["ADMIN"])
