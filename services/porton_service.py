@@ -1,5 +1,11 @@
 # services/porton_service.py
 
+from datetime import datetime
+
+import pytz
+
+from config import Config
+
 from db import execute_query
 
 from models.cita_model import (
@@ -15,6 +21,14 @@ from services.cita_service import (
 # CITAS PENDIENTES PARA PORTÓN
 # =========================================================
 def get_pending_citas_for_porton(user_predios):
+
+    zona_local = pytz.timezone(
+        Config.TIMEZONE
+    )
+
+    fecha_hoy = datetime.now(
+        zona_local
+    ).date()
 
     query = """
         SELECT
@@ -33,13 +47,17 @@ def get_pending_citas_for_porton(user_predios):
             ON p.id = c.predio_id
         WHERE c.estado = 'Pendiente'
         AND c.predio_id = ANY(%s)
+        AND c.fecha = %s
         ORDER BY c.fecha ASC,
                  c.horario ASC
     """
 
     return execute_query(
         query,
-        (user_predios,),
+        (
+            user_predios,
+            fecha_hoy
+        ),
         fetchall=True
     )
 

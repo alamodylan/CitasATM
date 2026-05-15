@@ -282,7 +282,7 @@
                         </a>
                     </li>
 
-                    {% if current_user.role in ['ADMIN', 'PREDIO'] %}
+                    {% if current_user.role in ['SUPERADMIN', 'ADMIN', 'PREDIO'] %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('dashboard.dashboard') }}">
                             <i class="bi bi-bar-chart-fill"></i>
@@ -291,7 +291,7 @@
                     </li>
                     {% endif %}
 
-                    {% if current_user.role in ['ADMIN', 'GUARDA'] %}
+                    {% if current_user.role in ['SUPERADMIN', 'ADMIN', 'GUARDA'] %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('porton.porton_home') }}">
                             <i class="bi bi-truck"></i>
@@ -300,7 +300,7 @@
                     </li>
                     {% endif %}
 
-                    {% if current_user.role == 'ADMIN' %}
+                    {% if current_user.role == 'SUPERADMIN' %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('users.usuarios') }}">
                             <i class="bi bi-people-fill"></i>

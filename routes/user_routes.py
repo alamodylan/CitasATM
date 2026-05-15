@@ -38,7 +38,7 @@ user_bp = Blueprint(
 # =========================================================
 @user_bp.route("/usuarios")
 @login_required
-@role_required(["ADMIN"])
+@role_required(["SUPERADMIN"])
 def usuarios():
 
     users = get_users()
@@ -57,7 +57,7 @@ def usuarios():
     methods=["GET", "POST"]
 )
 @login_required
-@role_required(["ADMIN"])
+@role_required(["SUPERADMIN"])
 def crear_usuario():
 
     predios = get_predios()
@@ -198,7 +198,7 @@ def crear_usuario():
     methods=["GET", "POST"]
 )
 @login_required
-@role_required(["ADMIN"])
+@role_required(["SUPERADMIN"])
 def editar_predios_usuario(user_id):
 
     user = get_user(user_id)
@@ -281,7 +281,7 @@ def editar_predios_usuario(user_id):
     methods=["POST"]
 )
 @login_required
-@role_required(["ADMIN"])
+@role_required(["SUPERADMIN"])
 def cambiar_estado_usuario(user_id):
 
     activo = (
