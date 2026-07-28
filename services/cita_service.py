@@ -162,6 +162,185 @@ def validate_slot_capacity(
 
     return total < limite
 
+# =========================================================
+# OBTENER ESTADO DE LOS HORARIOS
+# =========================================================
+def get_time_slots_status(
+    fecha,
+    predio_id,
+    limite=4,
+    exclude_cita_id=None
+):
+
+    """
+    Devuelve todos los intervalos de horario con su estado
+    de disponibilidad.
+
+    En creación:
+        exclude_cita_id debe ser None.
+
+    En edición:
+        exclude_cita_id debe contener el ID de la cita
+        que se está editando, para que no se cuente a sí
+        misma dentro del límite.
+
+    Ejemplo de respuesta:
+
+    [
+        {
+            "horario": "13:00-13:15",
+            "ocupados": 4,
+            "limite": 4,
+            "disponible": False,
+            "completo": True
+        }
+    ]
+    """
+
+    try:
+
+        predio_id = int(
+            predio_id
+        )
+
+    except (
+        TypeError,
+        ValueError
+    ):
+
+        raise ValueError(
+            "El predio indicado no es válido."
+        )
+
+    try:
+
+        limite = int(
+            limite
+        )
+
+    except (
+        TypeError,
+        ValueError
+    ):
+
+        limite = 4
+
+    if limite <= 0:
+
+        limite = 4
+
+    query = """
+        SELECT
+            horario,
+            COUNT(*) AS total
+        FROM citas
+        WHERE fecha = %s
+          AND predio_id = %s
+          AND estado = 'Pendiente'
+    """
+
+    params = [
+        fecha,
+        predio_id
+    ]
+
+    if exclude_cita_id is not None:
+
+        try:
+
+            exclude_cita_id = int(
+                exclude_cita_id
+            )
+
+        except (
+            TypeError,
+            ValueError
+        ):
+
+            raise ValueError(
+                "El identificador de la cita no es válido."
+            )
+
+        query += """
+          AND id <> %s
+        """
+
+        params.append(
+            exclude_cita_id
+        )
+
+    query += """
+        GROUP BY horario
+    """
+
+    resultados = execute_query(
+        query,
+        tuple(params),
+        fetchall=True
+    ) or []
+
+    ocupacion_por_horario = {}
+
+    for resultado in resultados:
+
+        horario = (
+            resultado.get("horario")
+            if hasattr(
+                resultado,
+                "get"
+            )
+            else resultado["horario"]
+        )
+
+        total = (
+            resultado.get(
+                "total",
+                0
+            )
+            if hasattr(
+                resultado,
+                "get"
+            )
+            else resultado["total"]
+        )
+
+        try:
+
+            total = int(
+                total
+            )
+
+        except (
+            TypeError,
+            ValueError
+        ):
+
+            total = 0
+
+        ocupacion_por_horario[
+            horario
+        ] = total
+
+    horarios = []
+
+    for horario in generate_time_slots():
+
+        ocupados = ocupacion_por_horario.get(
+            horario,
+            0
+        )
+
+        completo = ocupados >= limite
+
+        horarios.append({
+            "horario": horario,
+            "ocupados": ocupados,
+            "limite": limite,
+            "disponible": not completo,
+            "completo": completo
+        })
+
+    return horarios
 
 # =========================================================
 # RESOLVER NAVIERA DE LA CITA

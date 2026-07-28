@@ -1,5 +1,9 @@
 # routes/cita_routes.py
 
+from datetime import datetime
+
+import pytz
+
 from flask import (
     Blueprint,
     render_template,
@@ -10,6 +14,8 @@ from flask import (
     session
 )
 
+from config import Config
+
 from services.auth_service import (
     login_required,
     role_required,
@@ -18,6 +24,7 @@ from services.auth_service import (
 
 from services.cita_service import (
     generate_time_slots,
+    get_time_slots_status,
     create_new_cita,
     create_multiple_citas,
     update_existing_cita,
@@ -34,12 +41,6 @@ from services.cita_service import (
 from models.predio_model import (
     get_predios_by_user
 )
-
-from datetime import datetime
-
-import pytz
-
-from config import Config
 
 
 # =========================================================
@@ -75,6 +76,30 @@ def get_current_naviera_filter():
         return naviera or None
 
     return None
+
+
+# =========================================================
+# OBTENER FECHA LOCAL ACTUAL
+# =========================================================
+def get_local_today():
+
+    zona_local = pytz.timezone(
+        Config.TIMEZONE
+    )
+
+    return datetime.now(
+        zona_local
+    ).date()
+
+
+# =========================================================
+# OBTENER FECHA LOCAL EN FORMATO HTML
+# =========================================================
+def get_local_today_string():
+
+    return get_local_today().strftime(
+        "%Y-%m-%d"
+    )
 
 
 # =========================================================
@@ -445,6 +470,161 @@ def canceladas():
 
 
 # =========================================================
+# CONSULTAR ESTADO DE HORARIOS
+# =========================================================
+@cita_bp.route(
+    "/horarios-disponibles",
+    methods=["GET"]
+)
+@login_required
+@role_required([
+    "SUPERADMIN",
+    "ADMIN",
+    "PREDIO",
+    "NAVIERA"
+])
+def horarios_disponibles():
+
+    context = get_user_cita_context()
+
+    if not validate_active_predio(
+        context
+    ):
+
+        return {
+            "success": False,
+            "message": (
+                "No tiene acceso al predio activo."
+            ),
+            "horarios": []
+        }, 403
+
+    fecha_texto = (
+        request.args.get(
+            "fecha"
+        ) or ""
+    ).strip()
+
+    cita_id_texto = (
+        request.args.get(
+            "cita_id"
+        ) or ""
+    ).strip()
+
+    if not fecha_texto:
+
+        return {
+            "success": False,
+            "message": (
+                "Debe seleccionar una fecha."
+            ),
+            "horarios": []
+        }, 400
+
+    try:
+
+        fecha_seleccionada = datetime.strptime(
+            fecha_texto,
+            "%Y-%m-%d"
+        ).date()
+
+    except ValueError:
+
+        return {
+            "success": False,
+            "message": (
+                "La fecha seleccionada no es válida."
+            ),
+            "horarios": []
+        }, 400
+
+    if fecha_seleccionada < get_local_today():
+
+        return {
+            "success": False,
+            "message": (
+                "No puede seleccionar una fecha anterior "
+                "a la fecha actual."
+            ),
+            "horarios": []
+        }, 400
+
+    exclude_cita_id = None
+    predio_id = context["predio_id"]
+
+    # =====================================================
+    # SI VIENE CITA_ID, ES UNA CONSULTA DESDE EDICIÓN
+    # =====================================================
+    if cita_id_texto:
+
+        try:
+
+            exclude_cita_id = int(
+                cita_id_texto
+            )
+
+        except (
+            TypeError,
+            ValueError
+        ):
+
+            return {
+                "success": False,
+                "message": (
+                    "El identificador de la cita "
+                    "no es válido."
+                ),
+                "horarios": []
+            }, 400
+
+        cita = get_cita(
+            cita_id=exclude_cita_id,
+            predios=context["predio_ids"],
+            naviera=context["naviera"]
+        )
+
+        if not cita:
+
+            return {
+                "success": False,
+                "message": (
+                    "Cita no encontrada o sin permiso "
+                    "para acceder a ella."
+                ),
+                "horarios": []
+            }, 404
+
+        if cita["estado"] != "Pendiente":
+
+            return {
+                "success": False,
+                "message": (
+                    "Solo se pueden consultar horarios "
+                    "para citas pendientes."
+                ),
+                "horarios": []
+            }, 400
+
+        # En edición se utiliza el predio real de la cita.
+        predio_id = int(
+            cita["predio_id"]
+        )
+
+    horarios = get_time_slots_status(
+        fecha=fecha_texto,
+        predio_id=predio_id,
+        limite=4,
+        exclude_cita_id=exclude_cita_id
+    )
+
+    return {
+        "success": True,
+        "message": "",
+        "horarios": horarios
+    }
+
+
+# =========================================================
 # CREAR CITA
 # =========================================================
 @cita_bp.route(
@@ -470,13 +650,7 @@ def crear_cita():
 
     form_data = {}
 
-    zona_local = pytz.timezone(
-        Config.TIMEZONE
-    )
-
-    fecha_hoy = datetime.now(
-        zona_local
-    ).strftime("%Y-%m-%d")
+    fecha_hoy = get_local_today_string()
 
     if request.method == "POST":
 
@@ -513,9 +687,13 @@ def crear_cita():
                 "crear_cita.html",
                 time_slots=generate_time_slots(),
                 predios=context["predios"],
-                predio_actual=context["predio_id"],
+                predio_actual=context[
+                    "predio_id"
+                ],
                 user_role=context["role"],
-                user_naviera=context["naviera"],
+                user_naviera=context[
+                    "naviera"
+                ],
                 form_data=form_data,
                 fecha_hoy=fecha_hoy
             )
@@ -680,6 +858,8 @@ def editar_cita(cita_id):
 
         return redirect_no_predio_access()
 
+    fecha_hoy = get_local_today_string()
+
     cita = get_cita(
         cita_id=cita_id,
         predios=context["predio_ids"],
@@ -757,7 +937,8 @@ def editar_cita(cita_id):
                 user_role=context["role"],
                 user_naviera=context[
                     "naviera"
-                ]
+                ],
+                fecha_hoy=fecha_hoy
             )
 
         flash(
@@ -776,7 +957,8 @@ def editar_cita(cita_id):
         predios=context["predios"],
         predio_actual=context["predio_id"],
         user_role=context["role"],
-        user_naviera=context["naviera"]
+        user_naviera=context["naviera"],
+        fecha_hoy=fecha_hoy
     )
 
 

@@ -543,30 +543,16 @@
                                 id="horario"
                                 class="form-select"
                                 required
+                                disabled
                             >
 
                                 <option
                                     value=""
+                                    selected
                                     disabled
-                                    {% if not form_data.get('horario') %}
-                                        selected
-                                    {% endif %}
                                 >
-                                    Seleccione
+                                    Seleccione una fecha
                                 </option>
-
-                                {% for slot in time_slots %}
-
-                                    <option
-                                        value="{{ slot }}"
-                                        {% if form_data.get('horario') == slot %}
-                                            selected
-                                        {% endif %}
-                                    >
-                                        {{ slot }}
-                                    </option>
-
-                                {% endfor %}
 
                             </select>
 
@@ -728,6 +714,18 @@
     {{ url_for('citas.home') | tojson }}
 </script>
 
+<script type="application/json" id="horariosUrlData">
+    {{ url_for('citas.horarios_disponibles') | tojson }}
+</script>
+
+<script type="application/json" id="fechaHoyData">
+    {{ fecha_hoy | tojson }}
+</script>
+
+<script type="application/json" id="horarioSeleccionadoData">
+    {{ form_data.get('horario', '') | tojson }}
+</script>
+
 <script>
 
     // =====================================================
@@ -771,10 +769,36 @@
         ).textContent
     );
 
+    const horariosUrl = JSON.parse(
+        document.getElementById(
+            "horariosUrlData"
+        ).textContent
+    );
+
+    const fechaHoy = JSON.parse(
+        document.getElementById(
+            "fechaHoyData"
+        ).textContent
+    );
+
+    const horarioSeleccionadoInicial = JSON.parse(
+        document.getElementById(
+            "horarioSeleccionadoData"
+        ).textContent
+    );
+
 
     // =====================================================
     // ELEMENTOS
     // =====================================================
+    const fechaIndividual = document.getElementById(
+        "fecha"
+    );
+
+    const horarioIndividual = document.getElementById(
+        "horario"
+    );
+
     const tbodyMasivas = document.getElementById(
         "citasMasivasBody"
     );
@@ -808,30 +832,186 @@
 
 
     // =====================================================
-    // OPCIONES DE HORARIO
+    // COLOCAR MENSAJE EN SELECTOR DE HORARIO
+    // =====================================================
+    function setHorarioMessage(
+        selectElement,
+        message,
+        disabled=true
+    ) {
+
+        selectElement.innerHTML = "";
+
+        const option = document.createElement(
+            "option"
+        );
+
+        option.value = "";
+        option.textContent = message;
+        option.selected = true;
+        option.disabled = true;
+
+        selectElement.appendChild(
+            option
+        );
+
+        selectElement.disabled = disabled;
+
+    }
+
+
+    // =====================================================
+    // CARGAR HORARIOS DISPONIBLES
+    // =====================================================
+    async function cargarHorarios(
+        fecha,
+        selectElement,
+        selectedValue=""
+    ) {
+
+        if (!fecha) {
+
+            setHorarioMessage(
+                selectElement,
+                "Seleccione una fecha"
+            );
+
+            return;
+
+        }
+
+        setHorarioMessage(
+            selectElement,
+            "Consultando horarios..."
+        );
+
+        try {
+
+            const url = new URL(
+                horariosUrl,
+                window.location.origin
+            );
+
+            url.searchParams.set(
+                "fecha",
+                fecha
+            );
+
+            const response = await fetch(
+                url.toString(),
+                {
+                    method: "GET",
+                    headers: {
+                        "Accept": "application/json"
+                    }
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+
+                throw new Error(
+                    data.message ||
+                    "No fue posible consultar los horarios."
+                );
+
+            }
+
+            selectElement.innerHTML = "";
+
+            const emptyOption = document.createElement(
+                "option"
+            );
+
+            emptyOption.value = "";
+            emptyOption.textContent = "Seleccione";
+            emptyOption.disabled = true;
+            emptyOption.selected = !selectedValue;
+
+            selectElement.appendChild(
+                emptyOption
+            );
+
+            let selectedWasAdded = false;
+
+            (data.horarios || []).forEach(function (
+                item
+            ) {
+
+                const option = document.createElement(
+                    "option"
+                );
+
+                option.value = item.horario;
+
+                if (item.completo) {
+
+                    option.textContent =
+                        item.horario +
+                        " (Completo)";
+
+                    option.disabled = true;
+
+                } else {
+
+                    option.textContent =
+                        item.horario;
+
+                }
+
+                if (
+                    selectedValue &&
+                    item.horario === selectedValue &&
+                    !item.completo
+                ) {
+
+                    option.selected = true;
+                    selectedWasAdded = true;
+
+                }
+
+                selectElement.appendChild(
+                    option
+                );
+
+            });
+
+            if (
+                selectedValue &&
+                !selectedWasAdded
+            ) {
+
+                emptyOption.selected = true;
+
+            }
+
+            selectElement.disabled = false;
+
+        } catch (error) {
+
+            setHorarioMessage(
+                selectElement,
+                error.message ||
+                "Error al consultar horarios"
+            );
+
+        }
+
+    }
+
+
+    // =====================================================
+    // OPCIONES DE HORARIO DE RESPALDO
     // =====================================================
     function opcionesHorario() {
 
         const emptyOption =
-            '<option value="" selected disabled>Seleccione</option>';
+            '<option value="" selected disabled>' +
+            'Seleccione una fecha' +
+            '</option>';
 
-        const options = timeSlots.map(function (slot) {
-
-            const safeSlot = escapeHtml(
-                slot
-            );
-
-            return (
-                '<option value="' +
-                safeSlot +
-                '">' +
-                safeSlot +
-                '</option>'
-            );
-
-        }).join("");
-
-        return emptyOption + options;
+        return emptyOption;
 
     }
 
@@ -948,6 +1128,7 @@
                     type="date"
                     class="form-control form-control-sm"
                     name="fecha"
+                    min="${escapeHtml(fechaHoy)}"
                     required
                 >
             </td>
@@ -957,6 +1138,7 @@
                     class="form-select form-select-sm"
                     name="horario"
                     required
+                    disabled
                 >
                     ${opcionesHorario()}
                 </select>
@@ -972,6 +1154,26 @@
                 </button>
             </td>
         `;
+
+        const fechaInput = tr.querySelector(
+            '[name="fecha"]'
+        );
+
+        const horarioSelect = tr.querySelector(
+            '[name="horario"]'
+        );
+
+        fechaInput.addEventListener(
+            "change",
+            function () {
+
+                cargarHorarios(
+                    fechaInput.value,
+                    horarioSelect
+                );
+
+            }
+        );
 
         const deleteButton = tr.querySelector(
             ".btn-eliminar-fila"
@@ -1249,7 +1451,23 @@
 
 
     // =====================================================
-    // EVENTOS
+    // EVENTOS DE CITA INDIVIDUAL
+    // =====================================================
+    fechaIndividual.addEventListener(
+        "change",
+        function () {
+
+            cargarHorarios(
+                fechaIndividual.value,
+                horarioIndividual
+            );
+
+        }
+    );
+
+
+    // =====================================================
+    // EVENTOS DE CITAS MASIVAS
     // =====================================================
     btnAgregarFila.addEventListener(
         "click",
@@ -1260,6 +1478,27 @@
         "click",
         enviarCitasMasivas
     );
+
+
+    // =====================================================
+    // CARGAR HORARIO INDIVIDUAL AL ABRIR LA PÁGINA
+    // =====================================================
+    if (fechaIndividual.value) {
+
+        cargarHorarios(
+            fechaIndividual.value,
+            horarioIndividual,
+            horarioSeleccionadoInicial
+        );
+
+    } else {
+
+        setHorarioMessage(
+            horarioIndividual,
+            "Seleccione una fecha"
+        );
+
+    }
 
 
     // =====================================================
