@@ -130,6 +130,13 @@
             letter-spacing: 0.5px;
         }
 
+        .navbar-title{
+            font-size:1.45rem;
+            font-weight:700;
+            letter-spacing:.5px;
+            color:#fff;
+        }
+
         .navbar-custom .nav-link {
             color: rgba(255,255,255,0.85);
             border-radius: 10px;
@@ -266,9 +273,20 @@
         }
 
         .logo-navbar {
-            width: 42px;
-            height: 42px;
+            width: 78px;
+            height: 78px;
             object-fit: contain;
+            border-radius: 14px;
+            background: rgba(255,255,255,.96);
+            padding: 8px;
+            box-shadow:
+                0 8px 20px rgba(0,0,0,.18),
+                0 2px 6px rgba(0,0,0,.10);
+            transition: .25s ease;
+        }
+
+        .logo-navbar:hover{
+            transform: scale(1.03);
         }
 
         .user-session-card {
@@ -331,10 +349,9 @@
             }
 
             .logo-navbar {
-                width: 36px;
-                height: 36px;
+                width: 62px;
+                height: 62px;
             }
-
             .table-responsive {
                 border-radius: 14px;
             }
@@ -386,7 +403,7 @@
                     alt="ATM Citas"
                 >
 
-                <span>
+                <span class="navbar-title">
                     ATM Citas
                 </span>
 
@@ -945,12 +962,7 @@
                 function () {
 
                     navigator.serviceWorker
-                        .register(
-                            "{{ url_for(
-                                'static',
-                                filename='service-worker.js'
-                            ) }}"
-                        )
+                        .register("{{ url_for('static', filename='service-worker.js') }}")
                         .then(function (registration) {
 
                             console.log(
