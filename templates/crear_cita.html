@@ -59,14 +59,14 @@
 
                     <strong>Predio activo:</strong>
 
-                    {{ active_predio_nombre }}
+                    {{ active_predio_nombre or "Sin predio seleccionado" }}
 
                 </div>
 
             </div>
 
 
-            {% if current_user.role == "NAVIERA" %}
+            {% if user_role == "NAVIERA" %}
 
             <div class="col-md-6">
 
@@ -76,7 +76,7 @@
 
                     <strong>Naviera asignada:</strong>
 
-                    {{ current_user.naviera }}
+                    {{ user_naviera or "Sin naviera asignada" }}
 
                 </div>
 
@@ -304,18 +304,20 @@
                             </label>
 
 
-                            {% if current_user.role == "NAVIERA" %}
+                            {% if user_role == "NAVIERA" %}
 
                                 <!--
-                                    Para NAVIERA se muestra solo como
-                                    información. La ruta y el servicio
-                                    toman la naviera desde la sesión.
+                                    Para usuarios NAVIERA, el valor se
+                                    muestra bloqueado y visible.
+
+                                    El backend toma la naviera desde la
+                                    sesión y no confía en este campo.
                                 -->
                                 <input
                                     type="text"
                                     id="naviera"
-                                    class="form-control"
-                                    value="{{ current_user.naviera }}"
+                                    class="form-control bg-light fw-semibold"
+                                    value="{{ user_naviera }}"
                                     readonly
                                 >
 
@@ -513,6 +515,7 @@
                                 id="fecha"
                                 class="form-control"
                                 value="{{ form_data.get('fecha', '') }}"
+                                min="{{ fecha_hoy }}"
                                 required
                             >
 
@@ -607,10 +610,10 @@
                     Agregue las citas y luego presione
                     <strong>Crear citas masivas</strong>.
 
-                    {% if current_user.role == "NAVIERA" %}
+                    {% if user_role == "NAVIERA" %}
 
                         Todas serán registradas automáticamente para
-                        <strong>{{ current_user.naviera }}</strong>.
+                        <strong>{{ user_naviera }}</strong>.
 
                     {% endif %}
 
@@ -633,7 +636,7 @@
                                 <th>Cédula</th>
                                 <th>Placa</th>
 
-                                {% if current_user.role != "NAVIERA" %}
+                                {% if user_role != "NAVIERA" %}
                                     <th>Naviera</th>
                                 {% endif %}
 
@@ -709,12 +712,20 @@
     {{ predio_actual | tojson }}
 </script>
 
-<script type="application/json" id="currentUserRoleData">
-    {{ current_user.role | tojson }}
+<script type="application/json" id="userRoleData">
+    {{ user_role | default('', true) | tojson }}
 </script>
 
-<script type="application/json" id="currentUserNavieraData">
-    {{ current_user.naviera | default('', true) | tojson }}
+<script type="application/json" id="userNavieraData">
+    {{ user_naviera | default('', true) | tojson }}
+</script>
+
+<script type="application/json" id="masivasUrlData">
+    {{ url_for('citas.crear_citas_masivas') | tojson }}
+</script>
+
+<script type="application/json" id="homeUrlData">
+    {{ url_for('citas.home') | tojson }}
 </script>
 
 <script>
@@ -738,21 +749,27 @@
 
     const currentUserRole = JSON.parse(
         document.getElementById(
-            "currentUserRoleData"
+            "userRoleData"
         ).textContent
     );
 
     const currentUserNaviera = JSON.parse(
         document.getElementById(
-            "currentUserNavieraData"
+            "userNavieraData"
         ).textContent
     );
 
-    const masivasUrl =
-        "{{ url_for('citas.crear_citas_masivas') }}";
+    const masivasUrl = JSON.parse(
+        document.getElementById(
+            "masivasUrlData"
+        ).textContent
+    );
 
-    const homeUrl =
-        "{{ url_for('citas.home') }}";
+    const homeUrl = JSON.parse(
+        document.getElementById(
+            "homeUrlData"
+        ).textContent
+    );
 
 
     // =====================================================

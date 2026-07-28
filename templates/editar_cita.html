@@ -12,13 +12,25 @@ Editar Cita | ATM Citas
 
         <div class="card card-custom">
 
-            <div class="card-header-custom d-flex justify-content-between align-items-center">
+            <!-- ================================================== -->
+            <!-- ENCABEZADO -->
+            <!-- ================================================== -->
+            <div
+                class="
+                    card-header-custom
+                    d-flex
+                    justify-content-between
+                    align-items-center
+                    flex-wrap
+                    gap-2
+                "
+            >
 
                 <div>
 
                     <i class="bi bi-pencil-square me-2"></i>
 
-                    Editar Cita
+                    Editar cita
 
                 </div>
 
@@ -27,7 +39,7 @@ Editar Cita | ATM Citas
                     class="btn btn-outline-secondary btn-sm"
                 >
 
-                    <i class="bi bi-arrow-left"></i>
+                    <i class="bi bi-arrow-left me-1"></i>
 
                     Volver
 
@@ -35,31 +47,40 @@ Editar Cita | ATM Citas
 
             </div>
 
+
             <div class="card-body p-4">
 
-                <div class="row mb-4">
+                <!-- ================================================== -->
+                <!-- CONTEXTO -->
+                <!-- ================================================== -->
+                <div class="row g-3 mb-4">
 
                     <div class="col-md-6">
 
-                        <div class="alert alert-info rounded-4 mb-0">
+                        <div class="alert alert-info rounded-4 mb-0 h-100">
+
+                            <i class="bi bi-geo-alt-fill me-2"></i>
 
                             <strong>Predio activo:</strong>
 
-                            {{ active_predio_nombre }}
+                            {{ active_predio_nombre or cita.predio_nombre or "Sin predio seleccionado" }}
 
                         </div>
 
                     </div>
 
-                    {% if current_user.role == "NAVIERA" %}
+
+                    {% if user_role == "NAVIERA" %}
 
                     <div class="col-md-6">
 
-                        <div class="alert alert-primary rounded-4 mb-0">
+                        <div class="alert alert-primary rounded-4 mb-0 h-100">
+
+                            <i class="bi bi-building me-2"></i>
 
                             <strong>Naviera:</strong>
 
-                            {{ current_user.naviera }}
+                            {{ user_naviera or cita.naviera or "Sin naviera asignada" }}
 
                         </div>
 
@@ -68,6 +89,7 @@ Editar Cita | ATM Citas
                     {% endif %}
 
                 </div>
+
 
                 {% if error %}
 
@@ -79,6 +101,10 @@ Editar Cita | ATM Citas
 
                 {% endif %}
 
+
+                <!-- ================================================== -->
+                <!-- FORMULARIO -->
+                <!-- ================================================== -->
                 <form
                     method="POST"
                     action="{{ url_for('citas.editar_cita', cita_id=cita.id) }}"
@@ -86,120 +112,192 @@ Editar Cita | ATM Citas
 
                     <div class="row g-3">
 
+                        <!-- ====================================== -->
+                        <!-- CONTENEDOR / BOOKING -->
+                        <!-- ====================================== -->
                         <div class="col-md-6">
 
-                            <label class="form-label">
+                            <label
+                                for="contenedor"
+                                class="form-label fw-semibold"
+                            >
 
                                 Contenedor / BK
 
+                                <span class="text-danger">*</span>
+
                             </label>
 
                             <input
                                 type="text"
+                                id="contenedor"
                                 class="form-control text-uppercase"
                                 name="contenedor"
-                                value="{{ cita.contenedor }}"
+                                value="{{ cita.contenedor or '' }}"
+                                maxlength="50"
+                                autocomplete="off"
                                 required
                             >
 
                         </div>
 
+
+                        <!-- ====================================== -->
+                        <!-- CHOFER -->
+                        <!-- ====================================== -->
                         <div class="col-md-6">
 
-                            <label class="form-label">
+                            <label
+                                for="chofer_nombre"
+                                class="form-label fw-semibold"
+                            >
 
                                 Chofer
 
+                                <span class="text-danger">*</span>
+
                             </label>
 
                             <input
                                 type="text"
+                                id="chofer_nombre"
                                 class="form-control"
                                 name="chofer_nombre"
-                                value="{{ cita.chofer_nombre }}"
+                                value="{{ cita.chofer_nombre or '' }}"
+                                maxlength="150"
+                                autocomplete="off"
                                 required
                             >
 
                         </div>
 
+
+                        <!-- ====================================== -->
+                        <!-- CÉDULA -->
+                        <!-- ====================================== -->
                         <div class="col-md-6">
 
-                            <label class="form-label">
+                            <label
+                                for="chofer_cedula"
+                                class="form-label fw-semibold"
+                            >
 
                                 Cédula
 
+                                <span class="text-danger">*</span>
+
                             </label>
 
                             <input
                                 type="text"
+                                id="chofer_cedula"
                                 class="form-control"
                                 name="chofer_cedula"
-                                value="{{ cita.chofer_cedula }}"
+                                value="{{ cita.chofer_cedula or '' }}"
+                                maxlength="50"
+                                autocomplete="off"
                                 required
                             >
 
                         </div>
 
+
+                        <!-- ====================================== -->
+                        <!-- CABEZAL -->
+                        <!-- ====================================== -->
                         <div class="col-md-6">
 
-                            <label class="form-label">
+                            <label
+                                for="cabezal_placa"
+                                class="form-label fw-semibold"
+                            >
 
                                 Cabezal
 
+                                <span class="text-danger">*</span>
+
                             </label>
 
                             <input
                                 type="text"
+                                id="cabezal_placa"
                                 class="form-control text-uppercase"
                                 name="cabezal_placa"
-                                value="{{ cita.cabezal_placa }}"
+                                value="{{ cita.cabezal_placa or '' }}"
+                                maxlength="30"
+                                autocomplete="off"
                                 required
                             >
 
                         </div>
 
 
+                        <!-- ====================================== -->
                         <!-- NAVIERA -->
-
+                        <!-- ====================================== -->
                         <div class="col-md-6">
 
-                            <label class="form-label">
+                            <label
+                                for="naviera"
+                                class="form-label fw-semibold"
+                            >
 
                                 Naviera
 
+                                <span class="text-danger">*</span>
+
                             </label>
 
-                            {% if current_user.role == "NAVIERA" %}
+
+                            {% if user_role == "NAVIERA" %}
 
                                 <input
                                     type="text"
-                                    class="form-control"
-                                    value="{{ current_user.naviera }}"
+                                    id="naviera"
+                                    class="form-control bg-light fw-semibold"
+                                    value="{{ user_naviera or cita.naviera }}"
                                     readonly
                                 >
+
+                                <div class="form-text">
+
+                                    La naviera se asigna automáticamente
+                                    desde su cuenta.
+
+                                </div>
 
                             {% else %}
 
                                 <select
                                     class="form-select"
                                     name="naviera"
+                                    id="naviera"
                                     required
                                 >
 
-                                    <option value="COSCO"
-                                        {% if cita.naviera=="COSCO" %}selected{% endif %}
+                                    <option
+                                        value="COSCO"
+                                        {% if cita.naviera == "COSCO" %}
+                                            selected
+                                        {% endif %}
                                     >
                                         COSCO
                                     </option>
 
-                                    <option value="ONE"
-                                        {% if cita.naviera=="ONE" %}selected{% endif %}
+                                    <option
+                                        value="ONE"
+                                        {% if cita.naviera == "ONE" %}
+                                            selected
+                                        {% endif %}
                                     >
                                         ONE
                                     </option>
 
-                                    <option value="OOCL"
-                                        {% if cita.naviera=="OOCL" %}selected{% endif %}
+                                    <option
+                                        value="OOCL"
+                                        {% if cita.naviera == "OOCL" %}
+                                            selected
+                                        {% endif %}
                                     >
                                         OOCL
                                     </option>
@@ -211,19 +309,26 @@ Editar Cita | ATM Citas
                         </div>
 
 
+                        <!-- ====================================== -->
                         <!-- PREDIO -->
-
+                        <!-- ====================================== -->
                         <div class="col-md-6">
 
-                            <label class="form-label">
+                            <label
+                                for="predio_id"
+                                class="form-label fw-semibold"
+                            >
 
                                 Predio
+
+                                <span class="text-danger">*</span>
 
                             </label>
 
                             <select
                                 class="form-select"
                                 name="predio_id"
+                                id="predio_id"
                                 required
                             >
 
@@ -231,7 +336,7 @@ Editar Cita | ATM Citas
 
                                     <option
                                         value="{{ predio.id }}"
-                                        {% if predio.id==cita.predio_id %}
+                                        {% if predio.id|int == cita.predio_id|int %}
                                             selected
                                         {% endif %}
                                     >
@@ -247,23 +352,32 @@ Editar Cita | ATM Citas
                         </div>
 
 
+                        <!-- ====================================== -->
+                        <!-- ESTADO DEL CONTENEDOR -->
+                        <!-- ====================================== -->
                         <div class="col-md-6">
 
-                            <label class="form-label">
+                            <label
+                                for="estado_contenedor"
+                                class="form-label fw-semibold"
+                            >
 
                                 Estado del contenedor
+
+                                <span class="text-danger">*</span>
 
                             </label>
 
                             <select
                                 class="form-select"
                                 name="estado_contenedor"
+                                id="estado_contenedor"
                                 required
                             >
 
                                 <option
                                     value="Cargado"
-                                    {% if cita.estado_contenedor=="Cargado" %}
+                                    {% if cita.estado_contenedor == "Cargado" %}
                                         selected
                                     {% endif %}
                                 >
@@ -272,7 +386,7 @@ Editar Cita | ATM Citas
 
                                 <option
                                     value="Vacio"
-                                    {% if cita.estado_contenedor=="Vacio" %}
+                                    {% if cita.estado_contenedor == "Vacio" %}
                                         selected
                                     {% endif %}
                                 >
@@ -284,23 +398,32 @@ Editar Cita | ATM Citas
                         </div>
 
 
+                        <!-- ====================================== -->
+                        <!-- TIPO DE OPERACIÓN -->
+                        <!-- ====================================== -->
                         <div class="col-md-6">
 
-                            <label class="form-label">
+                            <label
+                                for="tipo_operacion"
+                                class="form-label fw-semibold"
+                            >
 
-                                Tipo operación
+                                Tipo de operación
+
+                                <span class="text-danger">*</span>
 
                             </label>
 
                             <select
                                 class="form-select"
                                 name="tipo_operacion"
+                                id="tipo_operacion"
                                 required
                             >
 
                                 <option
                                     value="Retira"
-                                    {% if cita.tipo_operacion=="Retira" %}
+                                    {% if cita.tipo_operacion == "Retira" %}
                                         selected
                                     {% endif %}
                                 >
@@ -309,7 +432,7 @@ Editar Cita | ATM Citas
 
                                 <option
                                     value="Entrega"
-                                    {% if cita.tipo_operacion=="Entrega" %}
+                                    {% if cita.tipo_operacion == "Entrega" %}
                                         selected
                                     {% endif %}
                                 >
@@ -321,16 +444,25 @@ Editar Cita | ATM Citas
                         </div>
 
 
+                        <!-- ====================================== -->
+                        <!-- FECHA -->
+                        <!-- ====================================== -->
                         <div class="col-md-3">
 
-                            <label class="form-label">
+                            <label
+                                for="fecha"
+                                class="form-label fw-semibold"
+                            >
 
                                 Fecha
+
+                                <span class="text-danger">*</span>
 
                             </label>
 
                             <input
                                 type="date"
+                                id="fecha"
                                 class="form-control"
                                 name="fecha"
                                 value="{{ cita.fecha }}"
@@ -340,17 +472,26 @@ Editar Cita | ATM Citas
                         </div>
 
 
+                        <!-- ====================================== -->
+                        <!-- HORARIO -->
+                        <!-- ====================================== -->
                         <div class="col-md-3">
 
-                            <label class="form-label">
+                            <label
+                                for="horario"
+                                class="form-label fw-semibold"
+                            >
 
                                 Horario
+
+                                <span class="text-danger">*</span>
 
                             </label>
 
                             <select
                                 class="form-select"
                                 name="horario"
+                                id="horario"
                                 required
                             >
 
@@ -358,7 +499,7 @@ Editar Cita | ATM Citas
 
                                     <option
                                         value="{{ slot }}"
-                                        {% if cita.horario==slot %}
+                                        {% if cita.horario == slot %}
                                             selected
                                         {% endif %}
                                     >
@@ -374,6 +515,7 @@ Editar Cita | ATM Citas
                         </div>
 
                     </div>
+
 
                     <button
                         class="btn btn-success w-100 mt-4"

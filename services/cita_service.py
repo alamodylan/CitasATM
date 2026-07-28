@@ -118,7 +118,7 @@ def validate_slot_capacity(
     fecha,
     horario,
     predio_id,
-    limite=5,
+    limite=4,
     exclude_cita_id=None
 ):
 

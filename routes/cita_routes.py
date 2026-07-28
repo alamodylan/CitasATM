@@ -35,6 +35,12 @@ from models.predio_model import (
     get_predios_by_user
 )
 
+from datetime import datetime
+
+import pytz
+
+from config import Config
+
 
 # =========================================================
 # BLUEPRINT
@@ -464,6 +470,14 @@ def crear_cita():
 
     form_data = {}
 
+    zona_local = pytz.timezone(
+        Config.TIMEZONE
+    )
+
+    fecha_hoy = datetime.now(
+        zona_local
+    ).strftime("%Y-%m-%d")
+
     if request.method == "POST":
 
         form_data = build_cita_form_data(
@@ -499,14 +513,11 @@ def crear_cita():
                 "crear_cita.html",
                 time_slots=generate_time_slots(),
                 predios=context["predios"],
-                predio_actual=context[
-                    "predio_id"
-                ],
+                predio_actual=context["predio_id"],
                 user_role=context["role"],
-                user_naviera=context[
-                    "naviera"
-                ],
-                form_data=form_data
+                user_naviera=context["naviera"],
+                form_data=form_data,
+                fecha_hoy=fecha_hoy
             )
 
         flash(
@@ -525,7 +536,8 @@ def crear_cita():
         predio_actual=context["predio_id"],
         user_role=context["role"],
         user_naviera=context["naviera"],
-        form_data=form_data
+        form_data=form_data,
+        fecha_hoy=fecha_hoy
     )
 
 
