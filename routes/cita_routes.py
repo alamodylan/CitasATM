@@ -18,13 +18,15 @@ from services.auth_service import (
 
 from services.cita_service import (
     generate_time_slots,
-    validate_slot_capacity,
     create_new_cita,
     create_multiple_citas,
+    update_existing_cita,
     get_all_pending_citas,
     get_all_completed_citas,
     get_all_expired_citas,
+    get_all_cancelled_citas,
     get_cita,
+    cancel_cita_by_user,
     remove_cita,
     check_expired_citas
 )
@@ -32,8 +34,6 @@ from services.cita_service import (
 from models.predio_model import (
     get_predios_by_user
 )
-
-from db import execute_query
 
 
 # =========================================================
@@ -46,31 +46,122 @@ cita_bp = Blueprint(
 
 
 # =========================================================
+# OBTENER ROL ACTUAL
+# =========================================================
+def get_current_role():
+
+    return (
+        session.get("role") or ""
+    ).strip().upper()
+
+
+# =========================================================
+# OBTENER NAVIERA DE FILTRO
+# =========================================================
+def get_current_naviera_filter():
+
+    if get_current_role() == "NAVIERA":
+
+        naviera = (
+            session.get("naviera") or ""
+        ).strip().upper()
+
+        return naviera or None
+
+    return None
+
+
+# =========================================================
+# OBTENER IDS DE PREDIOS
+# =========================================================
+def get_predio_ids(predios):
+
+    predio_ids = []
+
+    for predio in predios or []:
+
+        try:
+
+            predio_ids.append(
+                int(predio["id"])
+            )
+
+        except (
+            KeyError,
+            TypeError,
+            ValueError
+        ):
+
+            continue
+
+    return predio_ids
+
+
+# =========================================================
 # HELPER PREDIO ACTIVO
 # =========================================================
 def get_active_predio_id(predios):
 
-    predio_id = session.get("active_predio_id")
+    if not predios:
 
-    if not predio_id and predios:
+        session.pop(
+            "active_predio_id",
+            None
+        )
 
-        predio_id = predios[0]["id"]
-        session["active_predio_id"] = predio_id
-        session["active_predio_nombre"] = predios[0]["nombre"]
+        session.pop(
+            "active_predio_nombre",
+            None
+        )
+
+        return None
+
+    predio_ids = get_predio_ids(
+        predios
+    )
+
+    try:
+
+        predio_id = int(
+            session.get(
+                "active_predio_id"
+            )
+        )
+
+    except (
+        TypeError,
+        ValueError
+    ):
+
+        predio_id = None
+
+    # Si el predio guardado en sesión ya no está asignado
+    # al usuario, seleccionamos el primero permitido.
+    if predio_id not in predio_ids:
+
+        predio_id = int(
+            predios[0]["id"]
+        )
+
+        session[
+            "active_predio_id"
+        ] = predio_id
+
+        session[
+            "active_predio_nombre"
+        ] = predios[0]["nombre"]
 
     return predio_id
 
 
 # =========================================================
-# HOME
+# CARGAR CONTEXTO DEL USUARIO
 # =========================================================
-@cita_bp.route("/inicio")
-@login_required
-def home():
+def get_user_cita_context():
 
-    check_expired_citas()
-
-    user_id = session.get("user_id")
+    user_id = session.get(
+        "user_id"
+    )
 
     predios = get_predios_by_user(
         user_id
@@ -80,28 +171,174 @@ def home():
         predios
     )
 
-    if not predio_id or not user_has_predio_access(
+    return {
+        "user_id": user_id,
+        "role": get_current_role(),
+        "naviera": get_current_naviera_filter(),
+        "predios": predios,
+        "predio_ids": get_predio_ids(
+            predios
+        ),
+        "predio_id": predio_id
+    }
+
+
+# =========================================================
+# VALIDAR PREDIO ACTIVO
+# =========================================================
+def validate_active_predio(context):
+
+    predio_id = context.get(
+        "predio_id"
+    )
+
+    if not predio_id:
+
+        return False
+
+    return user_has_predio_access(
         predio_id
+    )
+
+
+# =========================================================
+# REDIRECCIÓN POR FALTA DE PREDIO
+# =========================================================
+def redirect_no_predio_access():
+
+    flash(
+        "No tiene acceso a ese predio.",
+        "danger"
+    )
+
+    return redirect(
+        url_for("auth.logout")
+    )
+
+
+# =========================================================
+# DATOS DEL FORMULARIO
+# =========================================================
+def build_cita_form_data(
+    predio_id
+):
+
+    return {
+        "contenedor": (
+            request.form.get(
+                "contenedor"
+            ) or ""
+        ).strip().upper(),
+
+        "chofer_nombre": (
+            request.form.get(
+                "chofer_nombre"
+            ) or ""
+        ).strip(),
+
+        "chofer_cedula": (
+            request.form.get(
+                "chofer_cedula"
+            ) or ""
+        ).strip(),
+
+        "cabezal_placa": (
+            request.form.get(
+                "cabezal_placa"
+            ) or ""
+        ).strip().upper(),
+
+        "fecha": request.form.get(
+            "fecha"
+        ),
+
+        "horario": request.form.get(
+            "horario"
+        ),
+
+        "naviera": (
+            request.form.get(
+                "naviera"
+            ) or ""
+        ).strip().upper(),
+
+        "estado_contenedor": (
+            request.form.get(
+                "estado_contenedor"
+            ) or ""
+        ).strip(),
+
+        "tipo_operacion": (
+            request.form.get(
+                "tipo_operacion"
+            ) or ""
+        ).strip(),
+
+        "predio_id": predio_id
+    }
+
+
+# =========================================================
+# HOME / PENDIENTES
+# =========================================================
+@cita_bp.route("/inicio")
+@login_required
+def home():
+
+    check_expired_citas()
+
+    context = get_user_cita_context()
+
+    if not validate_active_predio(
+        context
     ):
 
-        flash(
-            "No tiene acceso a ese predio.",
-            "danger"
-        )
-
-        return redirect(
-            url_for("auth.logout")
-        )
+        return redirect_no_predio_access()
 
     citas = get_all_pending_citas(
-        [predio_id]
+        predios=[
+            context["predio_id"]
+        ],
+        naviera=context["naviera"]
+    )
+
+    completadas = get_all_completed_citas(
+        predios=[
+            context["predio_id"]
+        ],
+        naviera=context["naviera"]
+    )
+
+    vencidas = get_all_expired_citas(
+        predios=[
+            context["predio_id"]
+        ],
+        naviera=context["naviera"]
+    )
+
+    canceladas = get_all_cancelled_citas(
+        predios=[
+            context["predio_id"]
+        ],
+        naviera=context["naviera"]
     )
 
     return render_template(
         "index.html",
         citas=citas,
-        predios=predios,
-        predio_actual=predio_id
+        completadas_count=len(
+            completadas
+        ),
+        vencidas_count=len(
+            vencidas
+        ),
+        canceladas_count=len(
+            canceladas
+        ),
+        predios=context["predios"],
+        predio_actual=context["predio_id"],
+        user_role=context["role"],
+        user_naviera=context["naviera"]
     )
 
 
@@ -112,38 +349,28 @@ def home():
 @login_required
 def vencidas():
 
-    user_id = session.get("user_id")
+    context = get_user_cita_context()
 
-    predios = get_predios_by_user(
-        user_id
-    )
-
-    predio_id = get_active_predio_id(
-        predios
-    )
-
-    if not predio_id or not user_has_predio_access(
-        predio_id
+    if not validate_active_predio(
+        context
     ):
 
-        flash(
-            "No tiene acceso a ese predio.",
-            "danger"
-        )
-
-        return redirect(
-            url_for("auth.logout")
-        )
+        return redirect_no_predio_access()
 
     citas = get_all_expired_citas(
-        [predio_id]
+        predios=[
+            context["predio_id"]
+        ],
+        naviera=context["naviera"]
     )
 
     return render_template(
         "vencidas.html",
         citas=citas,
-        predios=predios,
-        predio_actual=predio_id
+        predios=context["predios"],
+        predio_actual=context["predio_id"],
+        user_role=context["role"],
+        user_naviera=context["naviera"]
     )
 
 
@@ -154,38 +381,60 @@ def vencidas():
 @login_required
 def completadas():
 
-    user_id = session.get("user_id")
+    context = get_user_cita_context()
 
-    predios = get_predios_by_user(
-        user_id
-    )
-
-    predio_id = get_active_predio_id(
-        predios
-    )
-
-    if not predio_id or not user_has_predio_access(
-        predio_id
+    if not validate_active_predio(
+        context
     ):
 
-        flash(
-            "No tiene acceso a ese predio.",
-            "danger"
-        )
-
-        return redirect(
-            url_for("auth.logout")
-        )
+        return redirect_no_predio_access()
 
     citas = get_all_completed_citas(
-        [predio_id]
+        predios=[
+            context["predio_id"]
+        ],
+        naviera=context["naviera"]
     )
 
     return render_template(
         "completadas.html",
         citas=citas,
-        predios=predios,
-        predio_actual=predio_id
+        predios=context["predios"],
+        predio_actual=context["predio_id"],
+        user_role=context["role"],
+        user_naviera=context["naviera"]
+    )
+
+
+# =========================================================
+# CANCELADAS
+# =========================================================
+@cita_bp.route("/canceladas")
+@login_required
+def canceladas():
+
+    context = get_user_cita_context()
+
+    if not validate_active_predio(
+        context
+    ):
+
+        return redirect_no_predio_access()
+
+    citas = get_all_cancelled_citas(
+        predios=[
+            context["predio_id"]
+        ],
+        naviera=context["naviera"]
+    )
+
+    return render_template(
+        "canceladas.html",
+        citas=citas,
+        predios=context["predios"],
+        predio_actual=context["predio_id"],
+        user_role=context["role"],
+        user_naviera=context["naviera"]
     )
 
 
@@ -197,90 +446,68 @@ def completadas():
     methods=["GET", "POST"]
 )
 @login_required
-@role_required(["ADMIN", "PREDIO"])
+@role_required([
+    "SUPERADMIN",
+    "ADMIN",
+    "PREDIO",
+    "NAVIERA"
+])
 def crear_cita():
 
-    user_id = session.get("user_id")
+    context = get_user_cita_context()
 
-    predios = get_predios_by_user(
-        user_id
-    )
+    if not validate_active_predio(
+        context
+    ):
 
-    predio_id = get_active_predio_id(
-        predios
-    )
+        return redirect_no_predio_access()
+
+    form_data = {}
 
     if request.method == "POST":
 
-        data = {
-            "contenedor":
-                request.form.get("contenedor"),
-
-            "chofer_nombre":
-                request.form.get("chofer_nombre"),
-
-            "chofer_cedula":
-                request.form.get("chofer_cedula"),
-
-            "cabezal_placa":
-                request.form.get("cabezal_placa"),
-
-            "fecha":
-                request.form.get("fecha"),
-
-            "horario":
-                request.form.get("horario"),
-
-            "naviera":
-                request.form.get("naviera"),
-
-            "estado_contenedor":
-                request.form.get("estado_contenedor"),
-
-            "tipo_operacion":
-                request.form.get("tipo_operacion"),
-
-            "predio_id":
-                predio_id
-        }
-
-        if not data["predio_id"] or not user_has_predio_access(
-            data["predio_id"]
-        ):
-
-            flash(
-                "No tiene acceso a ese predio.",
-                "danger"
-            )
-
-            return redirect(
-                url_for("citas.home")
-            )
-
-        has_capacity = validate_slot_capacity(
-            data["fecha"],
-            data["horario"],
-            data["predio_id"]
+        form_data = build_cita_form_data(
+            context["predio_id"]
         )
 
-        if not has_capacity:
+        try:
+
+            create_new_cita(
+                data=form_data,
+                created_by=context[
+                    "user_id"
+                ],
+                user_role=context[
+                    "role"
+                ],
+                user_naviera=session.get(
+                    "naviera"
+                ),
+                allowed_predios=context[
+                    "predio_ids"
+                ]
+            )
+
+        except Exception as error:
 
             flash(
-                "El horario ya alcanzó el límite permitido.",
+                str(error),
                 "danger"
             )
 
             return render_template(
                 "crear_cita.html",
                 time_slots=generate_time_slots(),
-                predios=predios,
-                predio_actual=predio_id
+                predios=context["predios"],
+                predio_actual=context[
+                    "predio_id"
+                ],
+                user_role=context["role"],
+                user_naviera=context[
+                    "naviera"
+                ],
+                form_data=form_data
             )
-
-        create_new_cita(
-            data,
-            user_id
-        )
 
         flash(
             "Cita creada correctamente.",
@@ -294,8 +521,11 @@ def crear_cita():
     return render_template(
         "crear_cita.html",
         time_slots=generate_time_slots(),
-        predios=predios,
-        predio_actual=predio_id
+        predios=context["predios"],
+        predio_actual=context["predio_id"],
+        user_role=context["role"],
+        user_naviera=context["naviera"],
+        form_data=form_data
     )
 
 
@@ -307,23 +537,95 @@ def crear_cita():
     methods=["POST"]
 )
 @login_required
-@role_required(["ADMIN", "PREDIO"])
+@role_required([
+    "SUPERADMIN",
+    "ADMIN",
+    "PREDIO",
+    "NAVIERA"
+])
 def crear_citas_masivas():
 
-    citas = request.json.get(
+    context = get_user_cita_context()
+
+    if not validate_active_predio(
+        context
+    ):
+
+        return {
+            "success": False,
+            "created": 0,
+            "errors": [
+                "No tiene acceso al predio activo."
+            ]
+        }, 403
+
+    payload = request.get_json(
+        silent=True
+    ) or {}
+
+    citas = payload.get(
         "citas",
         []
     )
 
-    result = create_multiple_citas(
+    if not isinstance(
         citas,
-        session["user_id"]
+        list
+    ):
+
+        return {
+            "success": False,
+            "created": 0,
+            "errors": [
+                "El formato enviado no es válido."
+            ]
+        }, 400
+
+    # Todas las citas masivas quedan en el predio activo.
+    # No se acepta un predio enviado desde el navegador.
+    normalized_citas = []
+
+    for cita in citas:
+
+        if not isinstance(
+            cita,
+            dict
+        ):
+
+            continue
+
+        cita_data = dict(
+            cita
+        )
+
+        cita_data[
+            "predio_id"
+        ] = context["predio_id"]
+
+        normalized_citas.append(
+            cita_data
+        )
+
+    result = create_multiple_citas(
+        citas=normalized_citas,
+        created_by=context["user_id"],
+        user_role=context["role"],
+        user_naviera=session.get(
+            "naviera"
+        ),
+        allowed_predios=context[
+            "predio_ids"
+        ]
     )
 
     if result["errors"]:
 
         flash(
-            f"Se crearon {result['created']} citas.",
+            (
+                f"Se crearon "
+                f"{result['created']} citas. "
+                "Algunas filas presentaron errores."
+            ),
             "warning"
         )
 
@@ -335,7 +637,9 @@ def crear_citas_masivas():
         )
 
     return {
-        "success": True,
+        "success": (
+            len(result["errors"]) == 0
+        ),
         "created": result["created"],
         "errors": result["errors"]
     }
@@ -349,21 +653,34 @@ def crear_citas_masivas():
     methods=["GET", "POST"]
 )
 @login_required
-@role_required(["ADMIN"])
+@role_required([
+    "SUPERADMIN",
+    "ADMIN",
+    "NAVIERA"
+])
 def editar_cita(cita_id):
 
-    user_id = session.get("user_id")
+    context = get_user_cita_context()
 
-    predios = get_predios_by_user(
-        user_id
+    if not validate_active_predio(
+        context
+    ):
+
+        return redirect_no_predio_access()
+
+    cita = get_cita(
+        cita_id=cita_id,
+        predios=context["predio_ids"],
+        naviera=context["naviera"]
     )
-
-    cita = get_cita(cita_id)
 
     if not cita:
 
         flash(
-            "Cita no encontrada.",
+            (
+                "Cita no encontrada o no tiene "
+                "permiso para acceder a ella."
+            ),
             "danger"
         )
 
@@ -371,13 +688,11 @@ def editar_cita(cita_id):
             url_for("citas.home")
         )
 
-    if not user_has_predio_access(
-        cita["predio_id"]
-    ):
+    if cita["estado"] != "Pendiente":
 
         flash(
-            "No tiene acceso a ese predio.",
-            "danger"
+            "Solo se pueden editar citas pendientes.",
+            "warning"
         )
 
         return redirect(
@@ -386,58 +701,55 @@ def editar_cita(cita_id):
 
     if request.method == "POST":
 
-        predio_id = session.get("active_predio_id")
+        # Se conserva el predio de la cita.
+        # No se cambia silenciosamente al predio activo.
+        form_data = build_cita_form_data(
+            cita["predio_id"]
+        )
 
-        if not predio_id or not user_has_predio_access(
-            predio_id
-        ):
+        result = update_existing_cita(
+            cita_id=cita_id,
+            data=form_data,
+            user_role=context["role"],
+            user_naviera=session.get(
+                "naviera"
+            ),
+            allowed_predios=context[
+                "predio_ids"
+            ]
+        )
+
+        if not result["success"]:
 
             flash(
-                "No tiene acceso a ese predio.",
+                result["message"],
                 "danger"
             )
 
-            return redirect(
-                url_for("citas.home")
+            edited_cita = dict(
+                cita
             )
 
-        query = """
-            UPDATE citas
-            SET
-                contenedor = %s,
-                chofer_nombre = %s,
-                chofer_cedula = %s,
-                cabezal_placa = %s,
-                fecha = %s,
-                horario = %s,
-                naviera = %s,
-                estado_contenedor = %s,
-                tipo_operacion = %s,
-                predio_id = %s,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE id = %s
-        """
+            edited_cita.update(
+                form_data
+            )
 
-        execute_query(
-            query,
-            (
-                request.form.get("contenedor"),
-                request.form.get("chofer_nombre"),
-                request.form.get("chofer_cedula"),
-                request.form.get("cabezal_placa"),
-                request.form.get("fecha"),
-                request.form.get("horario"),
-                request.form.get("naviera"),
-                request.form.get("estado_contenedor"),
-                request.form.get("tipo_operacion"),
-                predio_id,
-                cita_id
-            ),
-            commit=True
-        )
+            return render_template(
+                "editar_cita.html",
+                cita=edited_cita,
+                time_slots=generate_time_slots(),
+                predios=context["predios"],
+                predio_actual=context[
+                    "predio_id"
+                ],
+                user_role=context["role"],
+                user_naviera=context[
+                    "naviera"
+                ]
+            )
 
         flash(
-            "Cita actualizada.",
+            result["message"],
             "success"
         )
 
@@ -449,41 +761,95 @@ def editar_cita(cita_id):
         "editar_cita.html",
         cita=cita,
         time_slots=generate_time_slots(),
-        predios=predios,
-        predio_actual=session.get("active_predio_id")
+        predios=context["predios"],
+        predio_actual=context["predio_id"],
+        user_role=context["role"],
+        user_naviera=context["naviera"]
     )
 
 
 # =========================================================
-# ELIMINAR
+# CANCELAR CITA
+# =========================================================
+@cita_bp.route(
+    "/cancelar-cita/<int:cita_id>",
+    methods=["POST"]
+)
+@login_required
+@role_required([
+    "SUPERADMIN",
+    "ADMIN",
+    "PREDIO",
+    "NAVIERA"
+])
+def cancelar_cita(cita_id):
+
+    context = get_user_cita_context()
+
+    if not validate_active_predio(
+        context
+    ):
+
+        return redirect_no_predio_access()
+
+    motivo_cancelacion = (
+        request.form.get(
+            "motivo_cancelacion"
+        ) or ""
+    ).strip()
+
+    result = cancel_cita_by_user(
+        cita_id=cita_id,
+        cancelada_por=context[
+            "user_id"
+        ],
+        motivo_cancelacion=motivo_cancelacion,
+        predios=context["predio_ids"],
+        naviera=context["naviera"]
+    )
+
+    flash(
+        result["message"],
+        (
+            "success"
+            if result["success"]
+            else "danger"
+        )
+    )
+
+    return redirect(
+        url_for("citas.home")
+    )
+
+
+# =========================================================
+# ELIMINAR CITA
 # =========================================================
 @cita_bp.route(
     "/eliminar-cita/<int:cita_id>",
     methods=["POST"]
 )
 @login_required
-@role_required(["ADMIN"])
+@role_required([
+    "SUPERADMIN",
+    "ADMIN"
+])
 def eliminar_cita(cita_id):
 
-    cita = get_cita(cita_id)
+    context = get_user_cita_context()
+
+    cita = get_cita(
+        cita_id=cita_id,
+        predios=context["predio_ids"]
+    )
 
     if not cita:
 
         flash(
-            "Cita no encontrada.",
-            "danger"
-        )
-
-        return redirect(
-            url_for("citas.home")
-        )
-
-    if not user_has_predio_access(
-        cita["predio_id"]
-    ):
-
-        flash(
-            "No tiene acceso a ese predio.",
+            (
+                "Cita no encontrada o no tiene "
+                "permiso para acceder a ella."
+            ),
             "danger"
         )
 
@@ -495,20 +861,20 @@ def eliminar_cita(cita_id):
         cita_id
     )
 
-    if not result["success"]:
-
-        flash(
-            result["message"],
-            "danger"
-        )
-
-        return redirect(
-            url_for("citas.home")
-        )
-
     flash(
-        "Cita eliminada.",
-        "success"
+        result.get(
+            "message",
+            (
+                "Cita eliminada."
+                if result["success"]
+                else "No fue posible eliminar la cita."
+            )
+        ),
+        (
+            "success"
+            if result["success"]
+            else "danger"
+        )
     )
 
     return redirect(

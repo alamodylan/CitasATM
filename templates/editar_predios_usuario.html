@@ -18,23 +18,27 @@
             <div>
 
                 <h2 class="fw-bold mb-1">
-
                     Predios del Usuario
-
                 </h2>
 
                 <p class="text-muted mb-0">
-
                     Configuración de acceso por predio
-
                 </p>
 
+                {% if active_predio_nombre %}
+
                 <div class="mt-2">
+
                     <span class="badge bg-dark fs-6">
+
                         Predio activo:
                         {{ active_predio_nombre }}
+
                     </span>
+
                 </div>
+
+                {% endif %}
 
             </div>
 
@@ -43,13 +47,14 @@
                 class="btn btn-outline-secondary"
             >
 
-                <i class="bi bi-arrow-left"></i>
+                <i class="bi bi-arrow-left me-1"></i>
 
                 Volver
 
             </a>
 
         </div>
+
 
         <!-- ========================================== -->
         <!-- CARD -->
@@ -59,47 +64,112 @@
             <div class="card-body p-4">
 
                 <!-- ================================== -->
-                <!-- INFO USER -->
+                <!-- INFORMACIÓN DEL USUARIO -->
                 <!-- ================================== -->
                 <div class="mb-4">
 
                     <div class="border rounded-4 bg-light p-4">
 
-                        <div class="row">
+                        <div class="row g-3">
 
                             <!-- ====================== -->
-                            <!-- USERNAME -->
+                            <!-- USUARIO -->
                             <!-- ====================== -->
-                            <div class="col-md-6">
+                            <div class="col-md-4">
 
                                 <div class="text-muted small">
-
                                     Usuario
-
                                 </div>
 
                                 <div class="fw-bold fs-5">
-
                                     {{ user.username }}
+                                </div>
+
+                            </div>
+
+
+                            <!-- ====================== -->
+                            <!-- ROL -->
+                            <!-- ====================== -->
+                            <div class="col-md-4">
+
+                                <div class="text-muted small">
+                                    Rol
+                                </div>
+
+                                <div class="mt-1">
+
+                                    {% if user.role == "SUPERADMIN" %}
+
+                                        <span class="badge bg-dark">
+                                            SUPERADMIN
+                                        </span>
+
+                                    {% elif user.role == "ADMIN" %}
+
+                                        <span class="badge bg-danger">
+                                            ADMIN
+                                        </span>
+
+                                    {% elif user.role == "PREDIO" %}
+
+                                        <span class="badge bg-primary">
+                                            PREDIO
+                                        </span>
+
+                                    {% elif user.role == "GUARDA" %}
+
+                                        <span class="badge bg-success">
+                                            GUARDA
+                                        </span>
+
+                                    {% elif user.role == "NAVIERA" %}
+
+                                        <span class="badge bg-info text-dark">
+                                            NAVIERA
+                                        </span>
+
+                                    {% else %}
+
+                                        <span class="badge bg-secondary">
+                                            {{ user.role }}
+                                        </span>
+
+                                    {% endif %}
 
                                 </div>
 
                             </div>
 
+
                             <!-- ====================== -->
-                            <!-- ROL -->
+                            <!-- NAVIERA -->
                             <!-- ====================== -->
-                            <div class="col-md-6">
+                            <div class="col-md-4">
 
                                 <div class="text-muted small">
-
-                                    Rol
-
+                                    Naviera
                                 </div>
 
-                                <div class="fw-bold fs-5">
+                                <div class="mt-1">
 
-                                    {{ user.role }}
+                                    {% if user.role == "NAVIERA" and user.naviera %}
+
+                                        <span class="badge bg-primary">
+
+                                            <i class="bi bi-truck-front-fill me-1"></i>
+
+                                            {{ user.naviera }}
+
+                                        </span>
+
+                                    {% else %}
+
+                                        <span class="text-muted">
+                                            No aplica
+                                        </span>
+
+                                    {% endif %}
 
                                 </div>
 
@@ -111,16 +181,30 @@
 
                 </div>
 
+
                 <!-- ================================== -->
-                <!-- FORM -->
+                <!-- FORMULARIO -->
                 <!-- ================================== -->
-                <form method="POST">
+                <form
+                    method="POST"
+                    id="editPrediosForm"
+                >
 
-                    <label class="form-label fw-semibold mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
 
-                        Predios Permitidos
+                        <label class="form-label fw-semibold mb-0">
 
-                    </label>
+                            Predios permitidos
+
+                        </label>
+
+                        <small class="text-muted">
+
+                            Seleccione al menos uno
+
+                        </small>
+
+                    </div>
 
                     <div class="row g-3">
 
@@ -128,26 +212,36 @@
 
                         <div class="col-md-4">
 
-                            <div class="border rounded-4 p-3 bg-light h-100">
+                            <div
+                                class="
+                                    border
+                                    rounded-4
+                                    p-3
+                                    bg-light
+                                    h-100
+                                    predio-option
+                                "
+                            >
 
                                 <div class="form-check">
 
                                     <input
-                                        class="form-check-input"
+                                        class="form-check-input predio-checkbox"
                                         type="checkbox"
                                         name="predios"
                                         value="{{ predio.id }}"
                                         id="predio_{{ predio.id }}"
-
                                         {% if predio.id in user_predios_ids %}
                                             checked
                                         {% endif %}
                                     >
 
                                     <label
-                                        class="form-check-label fw-semibold"
+                                        class="form-check-label fw-semibold w-100"
                                         for="predio_{{ predio.id }}"
                                     >
+
+                                        <i class="bi bi-building me-1"></i>
 
                                         {{ predio.nombre }}
 
@@ -162,6 +256,30 @@
                         {% endfor %}
 
                     </div>
+
+                    <div
+                        id="prediosError"
+                        class="text-danger small mt-3 d-none"
+                    >
+
+                        Debe seleccionar al menos un predio.
+
+                    </div>
+
+                    {% if user.role == "NAVIERA" %}
+
+                    <div class="alert alert-info mt-4 mb-0">
+
+                        <i class="bi bi-info-circle-fill me-2"></i>
+
+                        Este usuario podrá gestionar citas de
+                        <strong>{{ user.naviera }}</strong>
+                        únicamente en los predios seleccionados.
+
+                    </div>
+
+                    {% endif %}
+
 
                     <!-- ============================== -->
                     <!-- BOTONES -->
@@ -199,5 +317,92 @@
     </div>
 
 </div>
+
+
+<!-- ================================================== -->
+<!-- JAVASCRIPT -->
+<!-- ================================================== -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const form = document.getElementById(
+        "editPrediosForm"
+    );
+
+    const prediosError = document.getElementById(
+        "prediosError"
+    );
+
+    const predioCheckboxes = document.querySelectorAll(
+        ".predio-checkbox"
+    );
+
+
+    // ================================================
+    // VALIDAR SI HAY AL MENOS UN PREDIO
+    // ================================================
+    function hasSelectedPredio() {
+
+        return Array.from(
+            predioCheckboxes
+        ).some(function (checkbox) {
+
+            return checkbox.checked;
+
+        });
+
+    }
+
+
+    // ================================================
+    // OCULTAR ERROR AL MARCAR UN PREDIO
+    // ================================================
+    predioCheckboxes.forEach(function (checkbox) {
+
+        checkbox.addEventListener(
+            "change",
+            function () {
+
+                if (hasSelectedPredio()) {
+
+                    prediosError.classList.add(
+                        "d-none"
+                    );
+
+                }
+
+            }
+        );
+
+    });
+
+
+    // ================================================
+    // VALIDAR ANTES DE ENVIAR
+    // ================================================
+    form.addEventListener(
+        "submit",
+        function (event) {
+
+            if (!hasSelectedPredio()) {
+
+                event.preventDefault();
+
+                prediosError.classList.remove(
+                    "d-none"
+                );
+
+                prediosError.scrollIntoView({
+                    behavior: "smooth",
+                    block: "center"
+                });
+
+            }
+
+        }
+    );
+
+});
+</script>
 
 {% endblock %}

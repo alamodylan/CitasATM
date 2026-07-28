@@ -19,10 +19,14 @@ from services.user_service import (
     get_user,
     get_user_predios,
     get_predios,
+    get_navieras,
     create_new_user,
     update_user_predios,
-    change_user_status
+    change_user_status,
+    unlock_user_account,
+    reset_user_password
 )
+
 
 # =========================================================
 # BLUEPRINT
@@ -31,6 +35,38 @@ user_bp = Blueprint(
     "users",
     __name__
 )
+
+
+# =========================================================
+# ROLES PERMITIDOS
+# =========================================================
+ALLOWED_ROLES = {
+    "ADMIN",
+    "PREDIO",
+    "GUARDA",
+    "NAVIERA"
+}
+
+
+# =========================================================
+# CONVERTIR PREDIOS DEL FORMULARIO
+# =========================================================
+def parse_predios_selected():
+
+    predios_raw = request.form.getlist(
+        "predios"
+    )
+
+    try:
+
+        return [
+            int(predio_id)
+            for predio_id in predios_raw
+        ]
+
+    except (TypeError, ValueError):
+
+        return None
 
 
 # =========================================================
@@ -61,6 +97,7 @@ def usuarios():
 def crear_usuario():
 
     predios = get_predios()
+    navieras = get_navieras()
 
     if request.method == "POST":
 
@@ -68,6 +105,7 @@ def crear_usuario():
             request.form
             .get("username", "")
             .strip()
+            .lower()
         )
 
         password = (
@@ -80,20 +118,48 @@ def crear_usuario():
             request.form
             .get("role", "")
             .strip()
+            .upper()
         )
 
-        predios_selected = (
+        naviera = (
             request.form
-            .getlist("predios")
+            .get("naviera", "")
+            .strip()
+            .upper()
         )
 
-        predios_selected = [
-            int(predio_id)
-            for predio_id in predios_selected
-        ]
+        predios_selected = parse_predios_selected()
+
+        form_data = {
+            "username": username,
+            "role": role,
+            "naviera": naviera,
+            "predios_selected": (
+                predios_selected
+                if predios_selected is not None
+                else []
+            )
+        }
 
         # ================================================
-        # VALIDACIONES
+        # VALIDAR PREDIOS RECIBIDOS
+        # ================================================
+        if predios_selected is None:
+
+            flash(
+                "La selección de predios no es válida.",
+                "danger"
+            )
+
+            return render_template(
+                "crear_usuario.html",
+                predios=predios,
+                navieras=navieras,
+                form_data=form_data
+            )
+
+        # ================================================
+        # VALIDAR USUARIO
         # ================================================
         if not username:
 
@@ -105,13 +171,13 @@ def crear_usuario():
             return render_template(
                 "crear_usuario.html",
                 predios=predios,
-                form_data={
-                    "username": username,
-                    "role": role,
-                    "predios_selected": predios_selected
-                }
+                navieras=navieras,
+                form_data=form_data
             )
 
+        # ================================================
+        # VALIDAR CONTRASEÑA
+        # ================================================
         if not password:
 
             flash(
@@ -122,39 +188,81 @@ def crear_usuario():
             return render_template(
                 "crear_usuario.html",
                 predios=predios,
-                form_data={
-                    "username": username,
-                    "role": role,
-                    "predios_selected": predios_selected
-                }
+                navieras=navieras,
+                form_data=form_data
             )
 
-        if not predios_selected:
+        # ================================================
+        # VALIDAR ROL
+        # ================================================
+        if role not in ALLOWED_ROLES:
 
             flash(
-                "Debe seleccionar "
-                "al menos un predio.",
+                "El rol seleccionado no es válido.",
                 "danger"
             )
 
             return render_template(
                 "crear_usuario.html",
                 predios=predios,
-                form_data={
-                    "username": username,
-                    "role": role,
-                    "predios_selected": predios_selected
-                }
+                navieras=navieras,
+                form_data=form_data
             )
 
         # ================================================
-        # CREAR
+        # VALIDAR NAVIERA
+        # ================================================
+        if role == "NAVIERA":
+
+            if not naviera:
+
+                flash(
+                    "Debe seleccionar una naviera.",
+                    "danger"
+                )
+
+                return render_template(
+                    "crear_usuario.html",
+                    predios=predios,
+                    navieras=navieras,
+                    form_data=form_data
+                )
+
+        else:
+
+            # Los usuarios internos no deben tener
+            # una naviera asociada.
+            naviera = None
+            form_data["naviera"] = ""
+
+        # ================================================
+        # VALIDAR PREDIOS
+        # Todos los usuarios, incluido NAVIERA,
+        # deben tener al menos un predio.
+        # ================================================
+        if not predios_selected:
+
+            flash(
+                "Debe seleccionar al menos un predio.",
+                "danger"
+            )
+
+            return render_template(
+                "crear_usuario.html",
+                predios=predios,
+                navieras=navieras,
+                form_data=form_data
+            )
+
+        # ================================================
+        # CREAR USUARIO
         # ================================================
         result = create_new_user(
             username=username,
             password=password,
             role=role,
-            predios=predios_selected
+            predios=predios_selected,
+            naviera=naviera
         )
 
         if not result["success"]:
@@ -167,11 +275,8 @@ def crear_usuario():
             return render_template(
                 "crear_usuario.html",
                 predios=predios,
-                form_data={
-                    "username": username,
-                    "role": role,
-                    "predios_selected": predios_selected
-                }
+                navieras=navieras,
+                form_data=form_data
             )
 
         flash(
@@ -186,12 +291,13 @@ def crear_usuario():
     return render_template(
         "crear_usuario.html",
         predios=predios,
+        navieras=navieras,
         form_data={}
     )
 
 
 # =========================================================
-# EDITAR PREDIOS USUARIO
+# EDITAR PREDIOS DEL USUARIO
 # =========================================================
 @user_bp.route(
     "/usuarios/<int:user_id>/predios",
@@ -201,7 +307,9 @@ def crear_usuario():
 @role_required(["SUPERADMIN"])
 def editar_predios_usuario(user_id):
 
-    user = get_user(user_id)
+    user = get_user(
+        user_id
+    )
 
     if not user:
 
@@ -227,15 +335,35 @@ def editar_predios_usuario(user_id):
 
     if request.method == "POST":
 
-        predios_selected = (
-            request.form
-            .getlist("predios")
-        )
+        predios_selected = parse_predios_selected()
 
-        predios_selected = [
-            int(predio_id)
-            for predio_id in predios_selected
-        ]
+        if predios_selected is None:
+
+            flash(
+                "La selección de predios no es válida.",
+                "danger"
+            )
+
+            return redirect(
+                url_for(
+                    "users.editar_predios_usuario",
+                    user_id=user_id
+                )
+            )
+
+        if not predios_selected:
+
+            flash(
+                "Debe seleccionar al menos un predio.",
+                "danger"
+            )
+
+            return render_template(
+                "editar_predios_usuario.html",
+                user=user,
+                predios=predios,
+                user_predios_ids=[]
+            )
 
         result = update_user_predios(
             user_id,
@@ -249,15 +377,15 @@ def editar_predios_usuario(user_id):
                 "danger"
             )
 
-            return redirect(
-                url_for(
-                    "users.editar_predios_usuario",
-                    user_id=user_id
-                )
+            return render_template(
+                "editar_predios_usuario.html",
+                user=user,
+                predios=predios,
+                user_predios_ids=predios_selected
             )
 
         flash(
-            "Predios actualizados.",
+            "Predios actualizados correctamente.",
             "success"
         )
 
@@ -274,7 +402,7 @@ def editar_predios_usuario(user_id):
 
 
 # =========================================================
-# ACTIVAR / DESACTIVAR
+# ACTIVAR / DESACTIVAR USUARIO
 # =========================================================
 @user_bp.route(
     "/usuarios/<int:user_id>/estado",
@@ -284,10 +412,28 @@ def editar_predios_usuario(user_id):
 @role_required(["SUPERADMIN"])
 def cambiar_estado_usuario(user_id):
 
-    activo = (
-        request.form.get("activo")
-        == "true"
+    activo_value = (
+        request.form
+        .get("activo", "")
+        .strip()
+        .lower()
     )
+
+    if activo_value not in {
+        "true",
+        "false"
+    }:
+
+        flash(
+            "El estado recibido no es válido.",
+            "danger"
+        )
+
+        return redirect(
+            url_for("users.usuarios")
+        )
+
+    activo = activo_value == "true"
 
     result = change_user_status(
         user_id,
@@ -305,11 +451,151 @@ def cambiar_estado_usuario(user_id):
             url_for("users.usuarios")
         )
 
+    if activo:
+
+        message = "Usuario activado correctamente."
+
+    else:
+
+        message = "Usuario desactivado correctamente."
+
     flash(
-        "Estado actualizado.",
+        message,
         "success"
     )
 
     return redirect(
         url_for("users.usuarios")
+    )
+
+
+# =========================================================
+# DESBLOQUEAR USUARIO
+# =========================================================
+@user_bp.route(
+    "/usuarios/<int:user_id>/desbloquear",
+    methods=["POST"]
+)
+@login_required
+@role_required(["SUPERADMIN"])
+def desbloquear_usuario(user_id):
+
+    result = unlock_user_account(
+        user_id
+    )
+
+    if not result["success"]:
+
+        flash(
+            result["message"],
+            "danger"
+        )
+
+        return redirect(
+            url_for("users.usuarios")
+        )
+
+    flash(
+        "Usuario desbloqueado correctamente.",
+        "success"
+    )
+
+    return redirect(
+        url_for("users.usuarios")
+    )
+
+
+# =========================================================
+# RESTABLECER CONTRASEÑA
+# =========================================================
+@user_bp.route(
+    "/usuarios/<int:user_id>/restablecer-password",
+    methods=["GET", "POST"]
+)
+@login_required
+@role_required(["SUPERADMIN"])
+def restablecer_password_usuario(user_id):
+
+    user = get_user(
+        user_id
+    )
+
+    if not user:
+
+        flash(
+            "Usuario no encontrado.",
+            "danger"
+        )
+
+        return redirect(
+            url_for("users.usuarios")
+        )
+
+    if request.method == "POST":
+
+        new_password = (
+            request.form
+            .get("new_password", "")
+            .strip()
+        )
+
+        confirm_password = (
+            request.form
+            .get("confirm_password", "")
+            .strip()
+        )
+
+        if not new_password:
+
+            flash(
+                "Debe ingresar la nueva contraseña.",
+                "danger"
+            )
+
+            return render_template(
+                "restablecer_password.html",
+                user=user
+            )
+
+        if new_password != confirm_password:
+
+            flash(
+                "Las contraseñas no coinciden.",
+                "danger"
+            )
+
+            return render_template(
+                "restablecer_password.html",
+                user=user
+            )
+
+        result = reset_user_password(
+            user_id,
+            new_password
+        )
+
+        if not result["success"]:
+
+            flash(
+                result["message"],
+                "danger"
+            )
+
+            return render_template(
+                "restablecer_password.html",
+                user=user
+            )
+
+        flash(
+            "Contraseña restablecida correctamente.",
+            "success"
+        )
+
+        return redirect(
+            url_for("users.usuarios")
+        )
+
+    return render_template(
+        "restablecer_password.html",
+        user=user
     )

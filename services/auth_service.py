@@ -16,7 +16,9 @@ from werkzeug.security import (
 
 from models.user_model import (
     get_user_by_username,
-    get_user_by_id
+    get_user_by_id,
+    register_failed_login,
+    reset_failed_login
 )
 
 from models.predio_model import (
@@ -29,29 +31,54 @@ from models.predio_model import (
 # =========================================================
 def login_user(username, password):
 
-    username = username.strip().lower()
+    username = (
+        username
+        .strip()
+        .lower()
+    )
 
-    user = get_user_by_username(username)
+    user = get_user_by_username(
+        username
+    )
 
     if not user:
+
         return {
             "success": False,
-            "message": "Usuario no encontrado."
+            "message": "Usuario o contraseña incorrectos."
         }
 
     if not user["activo"]:
+
         return {
             "success": False,
-            "message": "Usuario inactivo."
+            "message": (
+                "Usuario inactivo. "
+                "Contacte al administrador."
+            )
         }
 
     # =====================================================
-    # TEMPORAL:
-    # Permite login texto plano mientras migramos hashes
+    # VALIDAR SI ESTÁ BLOQUEADO
+    # =====================================================
+    if user.get("is_locked"):
+
+        return {
+            "success": False,
+            "message": (
+                "Usuario bloqueado por intentos incorrectos. "
+                "Contacte al administrador."
+            )
+        }
+
+    # =====================================================
+    # VALIDAR CONTRASEÑA
     # =====================================================
     valid_password = False
 
-    stored_password = user.get("password_hash")
+    stored_password = user.get(
+        "password_hash"
+    )
 
     if stored_password:
 
@@ -65,15 +92,57 @@ def login_user(username, password):
                 password
             )
 
+        # Compatibilidad temporal con contraseñas antiguas
         elif stored_password == password:
 
             valid_password = True
 
+    # =====================================================
+    # CONTRASEÑA INCORRECTA
+    # =====================================================
     if not valid_password:
+
+        failed_result = register_failed_login(
+            user["id"]
+        )
+
+        attempts = failed_result[
+            "failed_login_attempts"
+        ]
+
+        is_locked = failed_result[
+            "is_locked"
+        ]
+
+        if is_locked:
+
+            return {
+                "success": False,
+                "message": (
+                    "Usuario bloqueado después de "
+                    "3 intentos de contraseña incorrecta."
+                )
+            }
+
+        remaining_attempts = max(
+            0,
+            3 - attempts
+        )
+
         return {
             "success": False,
-            "message": "Contraseña incorrecta."
+            "message": (
+                "Contraseña incorrecta. "
+                f"Intentos restantes: {remaining_attempts}."
+            )
         }
+
+    # =====================================================
+    # LOGIN CORRECTO: REINICIAR INTENTOS
+    # =====================================================
+    reset_failed_login(
+        user["id"]
+    )
 
     # =====================================================
     # OBTENER PREDIOS
@@ -85,9 +154,12 @@ def login_user(username, password):
     # =====================================================
     # CREAR SESIÓN
     # =====================================================
+    session.clear()
+
     session["user_id"] = user["id"]
     session["username"] = user["username"]
     session["role"] = user["role"]
+    session["naviera"] = user.get("naviera")
 
     session["predios"] = [
         predio["id"]
@@ -96,8 +168,13 @@ def login_user(username, password):
 
     if predios:
 
-        session["active_predio_id"] = predios[0]["id"]
-        session["active_predio_nombre"] = predios[0]["nombre"]
+        session["active_predio_id"] = (
+            predios[0]["id"]
+        )
+
+        session["active_predio_nombre"] = (
+            predios[0]["nombre"]
+        )
 
     else:
 
@@ -197,6 +274,13 @@ def user_has_predio_access(predio_id):
         "predios",
         []
     )
+
+    try:
+        predio_id = int(
+            predio_id
+        )
+    except (TypeError, ValueError):
+        return False
 
     return predio_id in predios
 

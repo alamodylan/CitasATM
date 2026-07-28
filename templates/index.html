@@ -6,9 +6,22 @@
 
 {% block content %}
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+<!-- ================================================== -->
+<!-- ENCABEZADO -->
+<!-- ================================================== -->
+<div
+    class="
+        d-flex
+        justify-content-between
+        align-items-start
+        flex-wrap
+        gap-3
+        mb-4
+    "
+>
 
     <div>
+
         <h2 class="fw-bold mb-1">
             Citas Pendientes
         </h2>
@@ -17,48 +30,97 @@
             Gestión operativa de citas ATM
         </p>
 
-        <div class="mt-2">
+        <div class="mt-2 d-flex flex-wrap gap-2">
+
+            {% if active_predio_nombre %}
+
             <span class="badge bg-dark fs-6">
+
+                <i class="bi bi-geo-alt-fill me-1"></i>
+
                 Predio activo:
                 {{ active_predio_nombre }}
+
             </span>
+
+            {% endif %}
+
+            {% if current_user.role == "NAVIERA" and current_user.naviera %}
+
+            <span class="badge bg-info text-dark fs-6">
+
+                <i class="bi bi-building me-1"></i>
+
+                Naviera:
+                {{ current_user.naviera }}
+
+            </span>
+
+            {% endif %}
+
         </div>
+
     </div>
 
-    {% if current_user.role in ['ADMIN', 'PREDIO'] %}
 
-    <div class="d-flex gap-2">
+    <!-- ============================================== -->
+    <!-- ACCIONES DEL ENCABEZADO -->
+    <!-- ============================================== -->
+    <div class="d-flex gap-2 flex-wrap">
+
+        {% if current_user.role in [
+            "SUPERADMIN",
+            "ADMIN",
+            "PREDIO",
+            "NAVIERA"
+        ] %}
 
         <a
             href="{{ url_for('citas.crear_cita') }}"
             class="btn btn-primary"
         >
+
             <i class="bi bi-plus-circle-fill me-2"></i>
-            Nueva Cita
+
+            Nueva cita
+
         </a>
+
+        {% endif %}
+
+
+        {% if current_user.role in [
+            "SUPERADMIN",
+            "ADMIN",
+            "PREDIO"
+        ] %}
 
         <a
             href="{{ url_for('dashboard.dashboard') }}"
             class="btn btn-outline-primary"
+            title="Ver dashboard"
         >
+
             <i class="bi bi-bar-chart-fill"></i>
+
         </a>
+
+        {% endif %}
 
     </div>
 
-    {% endif %}
-
 </div>
 
+
 <!-- ================================================== -->
-<!-- CARDS -->
+<!-- TARJETAS DE ESTADO -->
 <!-- ================================================== -->
 <div class="row g-4 mb-4">
 
     <!-- ============================================== -->
     <!-- PENDIENTES -->
     <!-- ============================================== -->
-    <div class="col-md-4">
+    <div class="col-md-6 col-xl-3">
 
         <div class="card card-custom h-100">
 
@@ -91,10 +153,11 @@
 
     </div>
 
+
     <!-- ============================================== -->
     <!-- COMPLETADAS -->
     <!-- ============================================== -->
-    <div class="col-md-4">
+    <div class="col-md-6 col-xl-3">
 
         <a
             href="{{ url_for('citas.completadas') }}"
@@ -114,7 +177,7 @@
                             </div>
 
                             <div class="fs-2 fw-bold text-success">
-                                {{ completadas_count or 0 }}
+                                {{ completadas_count|default(0, true) }}
                             </div>
 
                         </div>
@@ -134,10 +197,11 @@
 
     </div>
 
+
     <!-- ============================================== -->
     <!-- VENCIDAS -->
     <!-- ============================================== -->
-    <div class="col-md-4">
+    <div class="col-md-6 col-xl-3">
 
         <a
             href="{{ url_for('citas.vencidas') }}"
@@ -157,13 +221,57 @@
                             </div>
 
                             <div class="fs-2 fw-bold text-danger">
-                                {{ vencidas_count or 0 }}
+                                {{ vencidas_count|default(0, true) }}
                             </div>
 
                         </div>
 
                         <i
-                            class="bi bi-x-circle-fill text-danger"
+                            class="bi bi-clock-history text-danger"
+                            style="font-size: 3rem;"
+                        ></i>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </a>
+
+    </div>
+
+
+    <!-- ============================================== -->
+    <!-- CANCELADAS -->
+    <!-- ============================================== -->
+    <div class="col-md-6 col-xl-3">
+
+        <a
+            href="{{ url_for('citas.canceladas') }}"
+            class="text-decoration-none text-dark"
+        >
+
+            <div class="card card-custom h-100">
+
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between align-items-center">
+
+                        <div>
+
+                            <div class="text-muted">
+                                Canceladas
+                            </div>
+
+                            <div class="fs-2 fw-bold text-secondary">
+                                {{ canceladas_count|default(0, true) }}
+                            </div>
+
+                        </div>
+
+                        <i
+                            class="bi bi-x-circle-fill text-secondary"
                             style="font-size: 3rem;"
                         ></i>
 
@@ -179,28 +287,40 @@
 
 </div>
 
+
 <!-- ================================================== -->
-<!-- TABLA -->
+<!-- TABLA DE CITAS -->
 <!-- ================================================== -->
 <div class="card card-custom">
 
-    <div class="card-header-custom d-flex justify-content-between align-items-center">
+    <div
+        class="
+            card-header-custom
+            d-flex
+            justify-content-between
+            align-items-center
+            flex-wrap
+            gap-2
+        "
+    >
 
         <div>
 
             <i class="bi bi-calendar-event-fill me-2"></i>
 
-            Listado de Citas
+            Listado de citas pendientes
 
         </div>
 
         <span class="badge bg-primary">
 
-            {{ citas|length }} registros
+            {{ citas|length }}
+            registro{% if citas|length != 1 %}s{% endif %}
 
         </span>
 
     </div>
+
 
     <div class="card-body">
 
@@ -224,15 +344,23 @@
                         <th>Operación</th>
                         <th>Estado</th>
 
-                        {% if current_user.role == 'ADMIN' %}
+                        {% if current_user.role in [
+                            "SUPERADMIN",
+                            "ADMIN",
+                            "PREDIO",
+                            "NAVIERA"
+                        ] %}
+
                         <th class="text-center">
                             Acciones
                         </th>
+
                         {% endif %}
 
                     </tr>
 
                 </thead>
+
 
                 <tbody>
 
@@ -240,158 +368,232 @@
 
                     <tr>
 
-                        <!-- ====================== -->
+                        <!-- ============================== -->
                         <!-- PREDIO -->
-                        <!-- ====================== -->
+                        <!-- ============================== -->
                         <td>
 
                             <span class="fw-semibold">
 
-                                {{ cita.predio_nombre or 'Sin predio' }}
+                                {{ cita.predio_nombre or "Sin predio" }}
 
                             </span>
 
                         </td>
 
-                        <!-- ====================== -->
+
+                        <!-- ============================== -->
                         <!-- FECHA -->
-                        <!-- ====================== -->
+                        <!-- ============================== -->
                         <td>
-
                             {{ cita.fecha }}
-
                         </td>
 
-                        <!-- ====================== -->
+
+                        <!-- ============================== -->
                         <!-- HORARIO -->
-                        <!-- ====================== -->
+                        <!-- ============================== -->
                         <td>
 
-                            {{ cita.horario }}
+                            <span class="text-nowrap">
+                                {{ cita.horario }}
+                            </span>
 
                         </td>
 
-                        <!-- ====================== -->
+
+                        <!-- ============================== -->
                         <!-- CHOFER -->
-                        <!-- ====================== -->
+                        <!-- ============================== -->
                         <td>
-
-                            {{ cita.chofer_nombre }}
-
+                            {{ cita.chofer_nombre or "-" }}
                         </td>
 
-                        <!-- ====================== -->
+
+                        <!-- ============================== -->
                         <!-- PLACA -->
-                        <!-- ====================== -->
+                        <!-- ============================== -->
                         <td>
 
                             <span class="fw-semibold">
+                                {{ cita.cabezal_placa or "-" }}
+                            </span>
 
-                                {{ cita.cabezal_placa }}
+                        </td>
+
+
+                        <!-- ============================== -->
+                        <!-- CONTENEDOR / BOOKING -->
+                        <!-- ============================== -->
+                        <td>
+
+                            <span class="fw-semibold">
+                                {{ cita.contenedor or "-" }}
+                            </span>
+
+                        </td>
+
+
+                        <!-- ============================== -->
+                        <!-- NAVIERA -->
+                        <!-- ============================== -->
+                        <td>
+
+                            <span class="badge bg-light text-dark border">
+
+                                {{ cita.naviera or "Sin naviera" }}
 
                             </span>
 
                         </td>
 
-                        <!-- ====================== -->
-                        <!-- CONTENEDOR -->
-                        <!-- ====================== -->
-                        <td>
 
-                            {{ cita.contenedor }}
-
-                        </td>
-
-                        <!-- ====================== -->
-                        <!-- NAVIERA -->
-                        <!-- ====================== -->
-                        <td>
-
-                            {{ cita.naviera }}
-
-                        </td>
-
-                        <!-- ====================== -->
+                        <!-- ============================== -->
                         <!-- OPERACIÓN -->
-                        <!-- ====================== -->
+                        <!-- ============================== -->
                         <td>
-
-                            {{ cita.tipo_operacion }}
-
+                            {{ cita.tipo_operacion or "-" }}
                         </td>
 
-                        <!-- ====================== -->
+
+                        <!-- ============================== -->
                         <!-- ESTADO -->
-                        <!-- ====================== -->
+                        <!-- ============================== -->
                         <td>
 
-                            {% if cita.estado == 'Pendiente' %}
+                            {% if cita.estado == "Pendiente" %}
 
                                 <span class="badge-pendiente">
-
                                     {{ cita.estado }}
-
                                 </span>
 
-                            {% elif cita.estado == 'Completada' %}
+                            {% elif cita.estado == "Completada" %}
 
                                 <span class="badge-completada">
-
                                     {{ cita.estado }}
-
                                 </span>
 
-                            {% elif cita.estado == 'Vencida' %}
+                            {% elif cita.estado == "Vencida" %}
 
                                 <span class="badge-vencida">
-
                                     {{ cita.estado }}
+                                </span>
 
+                            {% elif cita.estado == "Cancelada" %}
+
+                                <span class="badge-cancelada">
+                                    {{ cita.estado }}
                                 </span>
 
                             {% else %}
 
                                 <span class="badge bg-secondary">
-
                                     {{ cita.estado }}
-
                                 </span>
 
                             {% endif %}
 
                         </td>
 
-                        <!-- ====================== -->
+
+                        <!-- ============================== -->
                         <!-- ACCIONES -->
-                        <!-- ====================== -->
-                        {% if current_user.role == 'ADMIN' %}
+                        <!-- ============================== -->
+                        {% if current_user.role in [
+                            "SUPERADMIN",
+                            "ADMIN",
+                            "PREDIO",
+                            "NAVIERA"
+                        ] %}
 
                         <td>
 
-                            <div class="d-flex justify-content-center gap-2">
+                            <div
+                                class="
+                                    d-flex
+                                    justify-content-center
+                                    align-items-center
+                                    gap-2
+                                    flex-wrap
+                                "
+                            >
 
+                                <!-- ====================== -->
                                 <!-- EDITAR -->
+                                <!-- ====================== -->
+                                {% if current_user.role in [
+                                    "SUPERADMIN",
+                                    "ADMIN",
+                                    "NAVIERA"
+                                ] %}
+
                                 <a
-                                    href="{{ url_for('citas.editar_cita', cita_id=cita.id) }}"
+                                    href="{{ url_for(
+                                        'citas.editar_cita',
+                                        cita_id=cita.id
+                                    ) }}"
                                     class="btn btn-outline-primary btn-sm"
-                                    title="Editar"
+                                    title="Editar cita"
                                 >
 
                                     <i class="bi bi-pencil-fill"></i>
 
                                 </a>
 
-                                <!-- ELIMINAR -->
+                                {% endif %}
+
+
+                                <!-- ====================== -->
+                                <!-- CANCELAR -->
+                                <!-- ====================== -->
+                                {% if current_user.role in [
+                                    "SUPERADMIN",
+                                    "ADMIN",
+                                    "PREDIO",
+                                    "NAVIERA"
+                                ] %}
+
+                                <button
+                                    type="button"
+                                    class="btn btn-outline-secondary btn-sm"
+                                    title="Cancelar cita"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#cancelModal{{ cita.id }}"
+                                >
+
+                                    <i class="bi bi-x-circle-fill"></i>
+
+                                </button>
+
+                                {% endif %}
+
+
+                                <!-- ====================== -->
+                                <!-- ELIMINAR PERMANENTEMENTE -->
+                                <!-- ====================== -->
+                                {% if current_user.role in [
+                                    "SUPERADMIN",
+                                    "ADMIN"
+                                ] %}
+
                                 <form
                                     method="POST"
-                                    action="{{ url_for('citas.eliminar_cita', cita_id=cita.id) }}"
+                                    action="{{ url_for(
+                                        'citas.eliminar_cita',
+                                        cita_id=cita.id
+                                    ) }}"
+                                    class="d-inline"
+                                    onsubmit="
+                                        return confirm(
+                                            '¿Desea eliminar esta cita permanentemente? Esta acción no se puede deshacer.'
+                                        );
+                                    "
                                 >
 
                                     <button
                                         type="submit"
                                         class="btn btn-outline-danger btn-sm"
-                                        title="Eliminar"
-                                        onclick="return confirm('¿Desea eliminar esta cita permanentemente?')"
+                                        title="Eliminar permanentemente"
                                     >
 
                                         <i class="bi bi-trash-fill"></i>
@@ -399,6 +601,8 @@
                                     </button>
 
                                 </form>
+
+                                {% endif %}
 
                             </div>
 
@@ -419,26 +623,42 @@
         {% else %}
 
         <!-- ========================================== -->
-        <!-- VACÍO -->
+        <!-- ESTADO VACÍO -->
         <!-- ========================================== -->
         <div class="text-center py-5">
 
             <i
-                class="bi bi-calendar-x-fill text-secondary"
+                class="bi bi-calendar-check text-secondary"
                 style="font-size: 4rem;"
             ></i>
 
             <h4 class="mt-4 fw-bold">
-
                 No hay citas pendientes
-
             </h4>
 
-            <p class="text-muted">
-
-                Todo está al día.
-
+            <p class="text-muted mb-4">
+                No existen citas pendientes para el predio y naviera seleccionados.
             </p>
+
+            {% if current_user.role in [
+                "SUPERADMIN",
+                "ADMIN",
+                "PREDIO",
+                "NAVIERA"
+            ] %}
+
+            <a
+                href="{{ url_for('citas.crear_cita') }}"
+                class="btn btn-primary"
+            >
+
+                <i class="bi bi-plus-circle-fill me-2"></i>
+
+                Crear una cita
+
+            </a>
+
+            {% endif %}
 
         </div>
 
@@ -447,6 +667,207 @@
     </div>
 
 </div>
+
+
+<!-- ================================================== -->
+<!-- MODALES PARA CANCELAR -->
+<!-- Se colocan fuera de la tabla para evitar problemas -->
+<!-- visuales con Bootstrap.                            -->
+<!-- ================================================== -->
+{% for cita in citas %}
+
+{% if current_user.role in [
+    "SUPERADMIN",
+    "ADMIN",
+    "PREDIO",
+    "NAVIERA"
+] %}
+
+<div
+    class="modal fade"
+    id="cancelModal{{ cita.id }}"
+    tabindex="-1"
+    aria-labelledby="cancelModalLabel{{ cita.id }}"
+    aria-hidden="true"
+>
+
+    <div class="modal-dialog modal-dialog-centered">
+
+        <div class="modal-content border-0 rounded-4 shadow">
+
+            <form
+                method="POST"
+                action="{{ url_for(
+                    'citas.cancelar_cita',
+                    cita_id=cita.id
+                ) }}"
+            >
+
+                <!-- ====================================== -->
+                <!-- ENCABEZADO -->
+                <!-- ====================================== -->
+                <div class="modal-header">
+
+                    <h5
+                        class="modal-title fw-bold"
+                        id="cancelModalLabel{{ cita.id }}"
+                    >
+
+                        <i class="bi bi-x-circle-fill text-secondary me-2"></i>
+
+                        Cancelar cita
+
+                    </h5>
+
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Cerrar"
+                    ></button>
+
+                </div>
+
+
+                <!-- ====================================== -->
+                <!-- CUERPO -->
+                <!-- ====================================== -->
+                <div class="modal-body">
+
+                    <div class="alert alert-warning">
+
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+
+                        La cita será marcada como cancelada y permanecerá
+                        en el historial.
+
+                    </div>
+
+                    <div class="border rounded-3 bg-light p-3 mb-3">
+
+                        <div class="row g-2">
+
+                            <div class="col-6">
+
+                                <small class="text-muted">
+                                    Contenedor / BK
+                                </small>
+
+                                <div class="fw-semibold">
+                                    {{ cita.contenedor or "-" }}
+                                </div>
+
+                            </div>
+
+                            <div class="col-6">
+
+                                <small class="text-muted">
+                                    Naviera
+                                </small>
+
+                                <div class="fw-semibold">
+                                    {{ cita.naviera or "-" }}
+                                </div>
+
+                            </div>
+
+                            <div class="col-6">
+
+                                <small class="text-muted">
+                                    Fecha
+                                </small>
+
+                                <div class="fw-semibold">
+                                    {{ cita.fecha }}
+                                </div>
+
+                            </div>
+
+                            <div class="col-6">
+
+                                <small class="text-muted">
+                                    Horario
+                                </small>
+
+                                <div class="fw-semibold">
+                                    {{ cita.horario }}
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <label
+                        for="motivo_cancelacion_{{ cita.id }}"
+                        class="form-label fw-semibold"
+                    >
+
+                        Motivo de cancelación
+
+                        <span class="text-danger">
+                            *
+                        </span>
+
+                    </label>
+
+                    <textarea
+                        name="motivo_cancelacion"
+                        id="motivo_cancelacion_{{ cita.id }}"
+                        class="form-control"
+                        rows="4"
+                        maxlength="500"
+                        required
+                        placeholder="Indique por qué se cancela esta cita..."
+                    ></textarea>
+
+                    <div class="form-text">
+                        Máximo 500 caracteres.
+                    </div>
+
+                </div>
+
+
+                <!-- ====================================== -->
+                <!-- PIE -->
+                <!-- ====================================== -->
+                <div class="modal-footer">
+
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                    >
+
+                        Volver
+
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="btn btn-danger"
+                    >
+
+                        <i class="bi bi-x-circle-fill me-2"></i>
+
+                        Confirmar cancelación
+
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endif %}
+
+{% endfor %}
 
 {% endblock %}
 

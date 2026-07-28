@@ -14,28 +14,32 @@
     <div>
 
         <h2 class="fw-bold mb-1">
-
             Gestión de Usuarios
-
         </h2>
 
         <p class="text-muted mb-0">
-
-            Administración de accesos y permisos
-
+            Administración de accesos, roles, navieras y predios
         </p>
 
+        {% if active_predio_nombre %}
+
         <div class="mt-2">
+
             <span class="badge bg-dark fs-6">
+
                 Predio activo:
                 {{ active_predio_nombre }}
+
             </span>
+
         </div>
+
+        {% endif %}
 
     </div>
 
     <!-- ============================================== -->
-    <!-- NUEVO -->
+    <!-- NUEVO USUARIO -->
     <!-- ============================================== -->
     <a
         href="{{ url_for('users.crear_usuario') }}"
@@ -50,12 +54,20 @@
 
 </div>
 
+
 <!-- ================================================== -->
 <!-- TABLA -->
 <!-- ================================================== -->
 <div class="card card-custom">
 
-    <div class="card-header-custom d-flex justify-content-between align-items-center">
+    <div
+        class="
+            card-header-custom
+            d-flex
+            justify-content-between
+            align-items-center
+        "
+    >
 
         <div>
 
@@ -67,7 +79,12 @@
 
         <span class="badge bg-primary">
 
-            {{ users|length }} usuarios
+            {{ users|length }}
+            {% if users|length == 1 %}
+                usuario
+            {% else %}
+                usuarios
+            {% endif %}
 
         </span>
 
@@ -88,7 +105,10 @@
                         <th>ID</th>
                         <th>Usuario</th>
                         <th>Rol</th>
+                        <th>Naviera</th>
                         <th>Estado</th>
+                        <th>Seguridad</th>
+                        <th>Intentos</th>
                         <th>Creado</th>
                         <th class="text-center">Acciones</th>
 
@@ -100,7 +120,13 @@
 
                     {% for user in users %}
 
-                    <tr>
+                    <tr
+                        {% if user.is_locked %}
+                            class="table-warning"
+                        {% elif not user.activo %}
+                            class="table-light"
+                        {% endif %}
+                    >
 
                         <!-- ========================== -->
                         <!-- ID -->
@@ -115,6 +141,7 @@
 
                         </td>
 
+
                         <!-- ========================== -->
                         <!-- USUARIO -->
                         <!-- ========================== -->
@@ -126,7 +153,20 @@
 
                             </div>
 
+                            {% if user.is_locked %}
+
+                            <small class="text-danger">
+
+                                <i class="bi bi-lock-fill me-1"></i>
+
+                                Acceso bloqueado
+
+                            </small>
+
+                            {% endif %}
+
                         </td>
+
 
                         <!-- ========================== -->
                         <!-- ROL -->
@@ -136,86 +176,302 @@
                             {% if user.role == "SUPERADMIN" %}
 
                                 <span class="badge bg-dark">
+
                                     SUPERADMIN
+
                                 </span>
 
                             {% elif user.role == "ADMIN" %}
 
                                 <span class="badge bg-danger">
+
                                     ADMIN
+
                                 </span>
 
                             {% elif user.role == "PREDIO" %}
 
                                 <span class="badge bg-primary">
+
                                     PREDIO
+
                                 </span>
 
                             {% elif user.role == "GUARDA" %}
 
                                 <span class="badge bg-success">
+
                                     GUARDA
+
+                                </span>
+
+                            {% elif user.role == "NAVIERA" %}
+
+                                <span class="badge bg-info text-dark">
+
+                                    NAVIERA
+
+                                </span>
+
+                            {% else %}
+
+                                <span class="badge bg-secondary">
+
+                                    {{ user.role }}
+
                                 </span>
 
                             {% endif %}
 
                         </td>
 
+
                         <!-- ========================== -->
-                        <!-- ESTADO -->
+                        <!-- NAVIERA -->
+                        <!-- ========================== -->
+                        <td>
+
+                            {% if user.role == "NAVIERA" and user.naviera %}
+
+                                <span class="badge bg-primary-subtle text-primary">
+
+                                    <i class="bi bi-truck-front-fill me-1"></i>
+
+                                    {{ user.naviera }}
+
+                                </span>
+
+                            {% else %}
+
+                                <span class="text-muted">
+
+                                    —
+
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+
+                        <!-- ========================== -->
+                        <!-- ESTADO ACTIVO -->
                         <!-- ========================== -->
                         <td>
 
                             {% if user.activo %}
 
                                 <span class="badge bg-success">
+
+                                    <i class="bi bi-check-circle-fill me-1"></i>
+
                                     Activo
+
                                 </span>
 
                             {% else %}
 
                                 <span class="badge bg-secondary">
+
+                                    <i class="bi bi-x-circle-fill me-1"></i>
+
                                     Inactivo
+
                                 </span>
 
                             {% endif %}
 
                         </td>
 
+
                         <!-- ========================== -->
-                        <!-- FECHA -->
+                        <!-- BLOQUEO -->
                         <!-- ========================== -->
                         <td>
 
-                            {{ user.created_at }}
+                            {% if user.is_locked %}
+
+                                <span class="badge bg-danger">
+
+                                    <i class="bi bi-lock-fill me-1"></i>
+
+                                    Bloqueado
+
+                                </span>
+
+                                {% if user.locked_at %}
+
+                                <div class="small text-muted mt-1">
+
+                                    {{ user.locked_at }}
+
+                                </div>
+
+                                {% endif %}
+
+                            {% else %}
+
+                                <span class="badge bg-success-subtle text-success">
+
+                                    <i class="bi bi-unlock-fill me-1"></i>
+
+                                    Habilitado
+
+                                </span>
+
+                            {% endif %}
 
                         </td>
+
+
+                        <!-- ========================== -->
+                        <!-- INTENTOS FALLIDOS -->
+                        <!-- ========================== -->
+                        <td>
+
+                            {% set failed_attempts =
+                                user.failed_login_attempts or 0
+                            %}
+
+                            {% if failed_attempts >= 3 %}
+
+                                <span class="badge bg-danger">
+
+                                    {{ failed_attempts }} / 3
+
+                                </span>
+
+                            {% elif failed_attempts > 0 %}
+
+                                <span class="badge bg-warning text-dark">
+
+                                    {{ failed_attempts }} / 3
+
+                                </span>
+
+                            {% else %}
+
+                                <span class="badge bg-light text-dark">
+
+                                    0 / 3
+
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+
+                        <!-- ========================== -->
+                        <!-- FECHA DE CREACIÓN -->
+                        <!-- ========================== -->
+                        <td>
+
+                            {% if user.created_at %}
+
+                                {{ user.created_at.strftime(
+                                    "%d/%m/%Y %H:%M"
+                                ) }}
+
+                            {% else %}
+
+                                <span class="text-muted">
+
+                                    —
+
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
 
                         <!-- ========================== -->
                         <!-- ACCIONES -->
                         <!-- ========================== -->
                         <td>
 
-                            <div class="d-flex justify-content-center gap-2">
+                            <div
+                                class="
+                                    d-flex
+                                    justify-content-center
+                                    align-items-center
+                                    flex-wrap
+                                    gap-2
+                                "
+                            >
 
                                 <!-- ================== -->
-                                <!-- PREDIOS -->
+                                <!-- EDITAR PREDIOS -->
                                 <!-- ================== -->
                                 <a
-                                    href="{{ url_for('users.editar_predios_usuario', user_id=user.id) }}"
+                                    href="{{
+                                        url_for(
+                                            'users.editar_predios_usuario',
+                                            user_id=user.id
+                                        )
+                                    }}"
                                     class="btn btn-outline-primary btn-sm"
+                                    title="Editar predios"
+                                    aria-label="Editar predios"
                                 >
 
                                     <i class="bi bi-buildings"></i>
 
                                 </a>
 
+
                                 <!-- ================== -->
-                                <!-- ESTADO -->
+                                <!-- DESBLOQUEAR -->
+                                <!-- Solo aparece si -->
+                                <!-- está bloqueado -->
+                                <!-- ================== -->
+                                {% if user.is_locked %}
+
+                                <form
+                                    method="POST"
+                                    action="{{
+                                        url_for(
+                                            'users.desbloquear_usuario',
+                                            user_id=user.id
+                                        )
+                                    }}"
+                                    class="m-0"
+                                >
+
+                                    <button
+                                        type="submit"
+                                        class="btn btn-outline-warning btn-sm"
+                                        title="Desbloquear usuario"
+                                        aria-label="Desbloquear usuario"
+                                        onclick="
+                                            return confirm(
+                                                '¿Desea desbloquear al usuario {{ user.username }}?'
+                                            );
+                                        "
+                                    >
+
+                                        <i class="bi bi-unlock-fill"></i>
+
+                                    </button>
+
+                                </form>
+
+                                {% endif %}
+
+
+                                <!-- ================== -->
+                                <!-- ACTIVAR / DESACTIVAR -->
                                 <!-- ================== -->
                                 <form
                                     method="POST"
-                                    action="{{ url_for('users.cambiar_estado_usuario', user_id=user.id) }}"
+                                    action="{{
+                                        url_for(
+                                            'users.cambiar_estado_usuario',
+                                            user_id=user.id
+                                        )
+                                    }}"
+                                    class="m-0"
                                 >
 
                                     <input
@@ -227,8 +483,15 @@
                                     {% if user.activo %}
 
                                     <button
+                                        type="submit"
                                         class="btn btn-outline-danger btn-sm"
-                                        onclick="return confirm('¿Desea desactivar este usuario?')"
+                                        title="Desactivar usuario"
+                                        aria-label="Desactivar usuario"
+                                        onclick="
+                                            return confirm(
+                                                '¿Desea desactivar al usuario {{ user.username }}?'
+                                            );
+                                        "
                                     >
 
                                         <i class="bi bi-person-x-fill"></i>
@@ -238,7 +501,15 @@
                                     {% else %}
 
                                     <button
+                                        type="submit"
                                         class="btn btn-outline-success btn-sm"
+                                        title="Activar usuario"
+                                        aria-label="Activar usuario"
+                                        onclick="
+                                            return confirm(
+                                                '¿Desea activar al usuario {{ user.username }}?'
+                                            );
+                                        "
                                     >
 
                                         <i class="bi bi-person-check-fill"></i>
@@ -266,7 +537,7 @@
         {% else %}
 
         <!-- ========================================== -->
-        <!-- VACÍO -->
+        <!-- SIN USUARIOS -->
         <!-- ========================================== -->
         <div class="text-center py-5">
 
@@ -286,6 +557,17 @@
                 Cree el primer usuario para comenzar.
 
             </p>
+
+            <a
+                href="{{ url_for('users.crear_usuario') }}"
+                class="btn btn-primary mt-2"
+            >
+
+                <i class="bi bi-person-plus-fill me-2"></i>
+
+                Crear usuario
+
+            </a>
 
         </div>
 

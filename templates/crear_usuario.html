@@ -18,23 +18,27 @@
             <div>
 
                 <h2 class="fw-bold mb-1">
-
                     Crear Usuario
-
                 </h2>
 
                 <p class="text-muted mb-0">
-
-                    Configuración de acceso y permisos
-
+                    Configuración de acceso, rol, naviera y predios
                 </p>
 
+                {% if active_predio_nombre %}
+
                 <div class="mt-2">
+
                     <span class="badge bg-dark fs-6">
+
                         Predio activo:
                         {{ active_predio_nombre }}
+
                     </span>
+
                 </div>
+
+                {% endif %}
 
             </div>
 
@@ -43,7 +47,7 @@
                 class="btn btn-outline-secondary"
             >
 
-                <i class="bi bi-arrow-left"></i>
+                <i class="bi bi-arrow-left me-1"></i>
 
                 Volver
 
@@ -51,14 +55,18 @@
 
         </div>
 
+
         <!-- ========================================== -->
-        <!-- FORM -->
+        <!-- FORMULARIO -->
         <!-- ========================================== -->
         <div class="card card-custom">
 
             <div class="card-body p-4">
 
-                <form method="POST">
+                <form
+                    method="POST"
+                    id="createUserForm"
+                >
 
                     <div class="row g-4">
 
@@ -67,7 +75,10 @@
                         <!-- ========================== -->
                         <div class="col-md-6">
 
-                            <label class="form-label fw-semibold">
+                            <label
+                                for="username"
+                                class="form-label fw-semibold"
+                            >
 
                                 Usuario
 
@@ -75,45 +86,91 @@
 
                             <input
                                 type="text"
+                                id="username"
                                 name="username"
                                 class="form-control form-control-lg"
+                                value="{{ form_data.get('username', '') }}"
+                                autocomplete="off"
+                                maxlength="100"
                                 required
                             >
 
+                            <div class="form-text">
+
+                                El usuario se guardará en minúsculas.
+
+                            </div>
+
                         </div>
 
+
                         <!-- ========================== -->
-                        <!-- PASSWORD -->
+                        <!-- CONTRASEÑA -->
                         <!-- ========================== -->
                         <div class="col-md-6">
 
-                            <label class="form-label fw-semibold">
+                            <label
+                                for="password"
+                                class="form-label fw-semibold"
+                            >
 
                                 Contraseña
 
                             </label>
 
-                            <input
-                                type="password"
-                                name="password"
-                                class="form-control form-control-lg"
-                                required
-                            >
+                            <div class="input-group input-group-lg">
+
+                                <input
+                                    type="password"
+                                    id="password"
+                                    name="password"
+                                    class="form-control"
+                                    autocomplete="new-password"
+                                    required
+                                >
+
+                                <button
+                                    type="button"
+                                    id="togglePassword"
+                                    class="btn btn-outline-secondary"
+                                    title="Mostrar u ocultar contraseña"
+                                    aria-label="Mostrar u ocultar contraseña"
+                                >
+
+                                    <i
+                                        id="passwordIcon"
+                                        class="bi bi-eye-fill"
+                                    ></i>
+
+                                </button>
+
+                            </div>
+
+                            <div class="form-text">
+
+                                La contraseña se almacenará cifrada.
+
+                            </div>
 
                         </div>
+
 
                         <!-- ========================== -->
                         <!-- ROL -->
                         <!-- ========================== -->
                         <div class="col-md-6">
 
-                            <label class="form-label fw-semibold">
+                            <label
+                                for="role"
+                                class="form-label fw-semibold"
+                            >
 
                                 Rol
 
                             </label>
 
                             <select
+                                id="role"
                                 name="role"
                                 class="form-select form-select-lg"
                                 required
@@ -123,32 +180,124 @@
                                     Seleccione
                                 </option>
 
-                                <option value="ADMIN">
+                                <option
+                                    value="ADMIN"
+                                    {% if form_data.get('role') == 'ADMIN' %}
+                                        selected
+                                    {% endif %}
+                                >
                                     ADMIN
                                 </option>
 
-                                <option value="PREDIO">
+                                <option
+                                    value="PREDIO"
+                                    {% if form_data.get('role') == 'PREDIO' %}
+                                        selected
+                                    {% endif %}
+                                >
                                     PREDIO
                                 </option>
 
-                                <option value="GUARDA">
+                                <option
+                                    value="GUARDA"
+                                    {% if form_data.get('role') == 'GUARDA' %}
+                                        selected
+                                    {% endif %}
+                                >
                                     GUARDA
+                                </option>
+
+                                <option
+                                    value="NAVIERA"
+                                    {% if form_data.get('role') == 'NAVIERA' %}
+                                        selected
+                                    {% endif %}
+                                >
+                                    NAVIERA
                                 </option>
 
                             </select>
 
                         </div>
 
+
+                        <!-- ========================== -->
+                        <!-- NAVIERA -->
+                        <!-- Solo se muestra para -->
+                        <!-- usuarios NAVIERA -->
+                        <!-- ========================== -->
+                        <div
+                            class="col-md-6"
+                            id="navieraContainer"
+                            style="display: none;"
+                        >
+
+                            <label
+                                for="naviera"
+                                class="form-label fw-semibold"
+                            >
+
+                                Naviera
+
+                            </label>
+
+                            <select
+                                id="naviera"
+                                name="naviera"
+                                class="form-select form-select-lg"
+                            >
+
+                                <option value="">
+                                    Seleccione una naviera
+                                </option>
+
+                                {% for naviera in navieras %}
+
+                                <option
+                                    value="{{ naviera.codigo }}"
+                                    {% if form_data.get('naviera') == naviera.codigo %}
+                                        selected
+                                    {% endif %}
+                                >
+
+                                    {{ naviera.nombre }}
+
+                                </option>
+
+                                {% endfor %}
+
+                            </select>
+
+                            <div class="form-text">
+
+                                El usuario solo podrá crear y consultar
+                                citas de esta naviera.
+
+                            </div>
+
+                        </div>
+
+
                         <!-- ========================== -->
                         <!-- PREDIOS -->
                         <!-- ========================== -->
                         <div class="col-md-12">
 
-                            <label class="form-label fw-semibold">
+                            <div class="d-flex justify-content-between align-items-center">
 
-                                Predios Permitidos
+                                <label class="form-label fw-semibold mb-0">
 
-                            </label>
+                                    Predios permitidos
+
+                                </label>
+
+                                <small class="text-muted">
+
+                                    Seleccione al menos uno
+
+                                </small>
+
+                            </div>
 
                             <div class="row g-3 mt-1">
 
@@ -156,22 +305,36 @@
 
                                 <div class="col-md-4">
 
-                                    <div class="border rounded-4 p-3 bg-light h-100">
+                                    <div
+                                        class="
+                                            border
+                                            rounded-4
+                                            p-3
+                                            bg-light
+                                            h-100
+                                            predio-option
+                                        "
+                                    >
 
                                         <div class="form-check">
 
                                             <input
-                                                class="form-check-input"
+                                                class="form-check-input predio-checkbox"
                                                 type="checkbox"
                                                 name="predios"
                                                 value="{{ predio.id }}"
                                                 id="predio_{{ predio.id }}"
+                                                {% if predio.id in form_data.get('predios_selected', []) %}
+                                                    checked
+                                                {% endif %}
                                             >
 
                                             <label
-                                                class="form-check-label fw-semibold"
+                                                class="form-check-label fw-semibold w-100"
                                                 for="predio_{{ predio.id }}"
                                             >
+
+                                                <i class="bi bi-building me-1"></i>
 
                                                 {{ predio.nombre }}
 
@@ -187,9 +350,26 @@
 
                             </div>
 
+                            <div
+                                id="prediosError"
+                                class="text-danger small mt-2 d-none"
+                            >
+
+                                Debe seleccionar al menos un predio.
+
+                            </div>
+
+                            <div class="form-text mt-3">
+
+                                Los usuarios de naviera podrán solicitar
+                                citas únicamente en los predios seleccionados.
+
+                            </div>
+
                         </div>
 
                     </div>
+
 
                     <!-- ============================== -->
                     <!-- BOTONES -->
@@ -227,5 +407,169 @@
     </div>
 
 </div>
+
+
+<!-- ================================================== -->
+<!-- JAVASCRIPT -->
+<!-- ================================================== -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const form = document.getElementById("createUserForm");
+    const roleSelect = document.getElementById("role");
+
+    const navieraContainer = document.getElementById(
+        "navieraContainer"
+    );
+
+    const navieraSelect = document.getElementById("naviera");
+
+    const passwordInput = document.getElementById("password");
+    const togglePasswordButton = document.getElementById(
+        "togglePassword"
+    );
+
+    const passwordIcon = document.getElementById(
+        "passwordIcon"
+    );
+
+    const prediosError = document.getElementById(
+        "prediosError"
+    );
+
+    const predioCheckboxes = document.querySelectorAll(
+        ".predio-checkbox"
+    );
+
+
+    // ================================================
+    // MOSTRAR U OCULTAR NAVIERA
+    // ================================================
+    function updateNavieraVisibility() {
+
+        const isNaviera = roleSelect.value === "NAVIERA";
+
+        if (isNaviera) {
+
+            navieraContainer.style.display = "";
+            navieraSelect.required = true;
+
+        } else {
+
+            navieraContainer.style.display = "none";
+            navieraSelect.required = false;
+            navieraSelect.value = "";
+
+        }
+
+    }
+
+
+    // ================================================
+    // MOSTRAR U OCULTAR CONTRASEÑA
+    // ================================================
+    togglePasswordButton.addEventListener(
+        "click",
+        function () {
+
+            const isPassword = (
+                passwordInput.type === "password"
+            );
+
+            passwordInput.type = (
+                isPassword
+                ? "text"
+                : "password"
+            );
+
+            passwordIcon.className = (
+                isPassword
+                ? "bi bi-eye-slash-fill"
+                : "bi bi-eye-fill"
+            );
+
+        }
+    );
+
+
+    // ================================================
+    // VALIDAR PREDIOS
+    // ================================================
+    function hasSelectedPredio() {
+
+        return Array.from(
+            predioCheckboxes
+        ).some(function (checkbox) {
+
+            return checkbox.checked;
+
+        });
+
+    }
+
+
+    predioCheckboxes.forEach(function (checkbox) {
+
+        checkbox.addEventListener(
+            "change",
+            function () {
+
+                if (hasSelectedPredio()) {
+
+                    prediosError.classList.add("d-none");
+
+                }
+
+            }
+        );
+
+    });
+
+
+    // ================================================
+    // VALIDACIÓN ANTES DE ENVIAR
+    // ================================================
+    form.addEventListener(
+        "submit",
+        function (event) {
+
+            if (!hasSelectedPredio()) {
+
+                event.preventDefault();
+
+                prediosError.classList.remove("d-none");
+
+                prediosError.scrollIntoView({
+                    behavior: "smooth",
+                    block: "center"
+                });
+
+                return;
+            }
+
+            if (
+                roleSelect.value === "NAVIERA"
+                && !navieraSelect.value
+            ) {
+
+                event.preventDefault();
+
+                navieraSelect.focus();
+
+            }
+
+        }
+    );
+
+
+    roleSelect.addEventListener(
+        "change",
+        updateNavieraVisibility
+    );
+
+    updateNavieraVisibility();
+
+});
+</script>
 
 {% endblock %}

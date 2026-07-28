@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}
-    Editar Cita | ATM Citas
+Editar Cita | ATM Citas
 {% endblock %}
 
 {% block content %}
@@ -15,159 +15,375 @@
             <div class="card-header-custom d-flex justify-content-between align-items-center">
 
                 <div>
+
                     <i class="bi bi-pencil-square me-2"></i>
+
                     Editar Cita
+
                 </div>
 
-                <a href="{{ url_for('citas.home') }}" class="btn btn-outline-secondary btn-sm">
+                <a
+                    href="{{ url_for('citas.home') }}"
+                    class="btn btn-outline-secondary btn-sm"
+                >
+
                     <i class="bi bi-arrow-left"></i>
+
                     Volver
+
                 </a>
 
             </div>
 
             <div class="card-body p-4">
 
-                <div class="alert alert-info rounded-4">
-                    <strong>Predio activo:</strong>
-                    {{ active_predio_nombre }}
-                </div>
+                <div class="row mb-4">
 
-                {% if error %}
-                <div class="alert alert-danger rounded-4">
-                    {{ error }}
-                </div>
-                {% endif %}
+                    <div class="col-md-6">
 
-                <form method="POST" action="{{ url_for('citas.editar_cita', cita_id=cita.id) }}">
+                        <div class="alert alert-info rounded-4 mb-0">
 
-                    <div class="row g-3">
+                            <strong>Predio activo:</strong>
 
-                        <div class="col-md-6">
-                            <label for="contenedor" class="form-label">Contenedor o BK</label>
-                            <input
-                                type="text"
-                                id="contenedor"
-                                name="contenedor"
-                                class="form-control"
-                                value="{{ cita.contenedor }}"
-                                required
-                            >
-                        </div>
+                            {{ active_predio_nombre }}
 
-                        <div class="col-md-6">
-                            <label for="chofer_nombre" class="form-label">Nombre del Chofer</label>
-                            <input
-                                type="text"
-                                id="chofer_nombre"
-                                name="chofer_nombre"
-                                class="form-control"
-                                value="{{ cita.chofer_nombre }}"
-                                required
-                            >
-                        </div>
-
-                        <div class="col-md-6">
-                            <label for="chofer_cedula" class="form-label">Cédula del Chofer</label>
-                            <input
-                                type="text"
-                                id="chofer_cedula"
-                                name="chofer_cedula"
-                                class="form-control"
-                                value="{{ cita.chofer_cedula }}"
-                                required
-                            >
-                        </div>
-
-                        <div class="col-md-6">
-                            <label for="cabezal_placa" class="form-label">Placa del Cabezal</label>
-                            <input
-                                type="text"
-                                id="cabezal_placa"
-                                name="cabezal_placa"
-                                class="form-control"
-                                value="{{ cita.cabezal_placa }}"
-                                required
-                            >
-                        </div>
-
-                        <div class="col-md-6">
-                            <label for="naviera" class="form-label">Naviera</label>
-                            <select
-                                id="naviera"
-                                name="naviera"
-                                class="form-select"
-                                required
-                            >
-                                <option value="COSCO" {% if cita.naviera == "COSCO" %}selected{% endif %}>COSCO</option>
-                                <option value="ONE" {% if cita.naviera == "ONE" %}selected{% endif %}>ONE</option>
-                                <option value="OOCL" {% if cita.naviera == "OOCL" %}selected{% endif %}>OOCL</option>
-                                <option value="VASI" {% if cita.naviera == "VASI" %}selected{% endif %}>VASI</option>
-                            </select>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label for="estado_contenedor" class="form-label">Estado del Contenedor</label>
-                            <select
-                                id="estado_contenedor"
-                                name="estado_contenedor"
-                                class="form-select"
-                                required
-                            >
-                                <option value="Cargado" {% if cita.estado_contenedor == "Cargado" %}selected{% endif %}>Cargado</option>
-                                <option value="Vacio" {% if cita.estado_contenedor == "Vacio" %}selected{% endif %}>Vacío</option>
-                            </select>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label for="tipo_operacion" class="form-label">Tipo de Operación</label>
-                            <select
-                                id="tipo_operacion"
-                                name="tipo_operacion"
-                                class="form-select"
-                                required
-                            >
-                                <option value="Retira" {% if cita.tipo_operacion == "Retira" %}selected{% endif %}>Retira</option>
-                                <option value="Entrega" {% if cita.tipo_operacion == "Entrega" %}selected{% endif %}>Entrega</option>
-                            </select>
-                        </div>
-
-                        <div class="col-md-3">
-                            <label for="fecha" class="form-label">Fecha</label>
-                            <input
-                                type="date"
-                                id="fecha"
-                                name="fecha"
-                                class="form-control"
-                                value="{{ cita.fecha }}"
-                                required
-                            >
-                        </div>
-
-                        <div class="col-md-3">
-                            <label for="horario" class="form-label">Horario</label>
-                            <select
-                                id="horario"
-                                name="horario"
-                                class="form-select"
-                                required
-                            >
-                                {% for slot in time_slots %}
-                                    <option
-                                        value="{{ slot }}"
-                                        {% if cita.horario == slot %}selected{% endif %}
-                                    >
-                                        {{ slot }}
-                                    </option>
-                                {% endfor %}
-                            </select>
                         </div>
 
                     </div>
 
-                    <button type="submit" class="btn btn-success w-100 mt-4">
+                    {% if current_user.role == "NAVIERA" %}
+
+                    <div class="col-md-6">
+
+                        <div class="alert alert-primary rounded-4 mb-0">
+
+                            <strong>Naviera:</strong>
+
+                            {{ current_user.naviera }}
+
+                        </div>
+
+                    </div>
+
+                    {% endif %}
+
+                </div>
+
+                {% if error %}
+
+                <div class="alert alert-danger rounded-4">
+
+                    {{ error }}
+
+                </div>
+
+                {% endif %}
+
+                <form
+                    method="POST"
+                    action="{{ url_for('citas.editar_cita', cita_id=cita.id) }}"
+                >
+
+                    <div class="row g-3">
+
+                        <div class="col-md-6">
+
+                            <label class="form-label">
+
+                                Contenedor / BK
+
+                            </label>
+
+                            <input
+                                type="text"
+                                class="form-control text-uppercase"
+                                name="contenedor"
+                                value="{{ cita.contenedor }}"
+                                required
+                            >
+
+                        </div>
+
+                        <div class="col-md-6">
+
+                            <label class="form-label">
+
+                                Chofer
+
+                            </label>
+
+                            <input
+                                type="text"
+                                class="form-control"
+                                name="chofer_nombre"
+                                value="{{ cita.chofer_nombre }}"
+                                required
+                            >
+
+                        </div>
+
+                        <div class="col-md-6">
+
+                            <label class="form-label">
+
+                                Cédula
+
+                            </label>
+
+                            <input
+                                type="text"
+                                class="form-control"
+                                name="chofer_cedula"
+                                value="{{ cita.chofer_cedula }}"
+                                required
+                            >
+
+                        </div>
+
+                        <div class="col-md-6">
+
+                            <label class="form-label">
+
+                                Cabezal
+
+                            </label>
+
+                            <input
+                                type="text"
+                                class="form-control text-uppercase"
+                                name="cabezal_placa"
+                                value="{{ cita.cabezal_placa }}"
+                                required
+                            >
+
+                        </div>
+
+
+                        <!-- NAVIERA -->
+
+                        <div class="col-md-6">
+
+                            <label class="form-label">
+
+                                Naviera
+
+                            </label>
+
+                            {% if current_user.role == "NAVIERA" %}
+
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    value="{{ current_user.naviera }}"
+                                    readonly
+                                >
+
+                            {% else %}
+
+                                <select
+                                    class="form-select"
+                                    name="naviera"
+                                    required
+                                >
+
+                                    <option value="COSCO"
+                                        {% if cita.naviera=="COSCO" %}selected{% endif %}
+                                    >
+                                        COSCO
+                                    </option>
+
+                                    <option value="ONE"
+                                        {% if cita.naviera=="ONE" %}selected{% endif %}
+                                    >
+                                        ONE
+                                    </option>
+
+                                    <option value="OOCL"
+                                        {% if cita.naviera=="OOCL" %}selected{% endif %}
+                                    >
+                                        OOCL
+                                    </option>
+
+                                </select>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <!-- PREDIO -->
+
+                        <div class="col-md-6">
+
+                            <label class="form-label">
+
+                                Predio
+
+                            </label>
+
+                            <select
+                                class="form-select"
+                                name="predio_id"
+                                required
+                            >
+
+                                {% for predio in predios %}
+
+                                    <option
+                                        value="{{ predio.id }}"
+                                        {% if predio.id==cita.predio_id %}
+                                            selected
+                                        {% endif %}
+                                    >
+
+                                        {{ predio.nombre }}
+
+                                    </option>
+
+                                {% endfor %}
+
+                            </select>
+
+                        </div>
+
+
+                        <div class="col-md-6">
+
+                            <label class="form-label">
+
+                                Estado del contenedor
+
+                            </label>
+
+                            <select
+                                class="form-select"
+                                name="estado_contenedor"
+                                required
+                            >
+
+                                <option
+                                    value="Cargado"
+                                    {% if cita.estado_contenedor=="Cargado" %}
+                                        selected
+                                    {% endif %}
+                                >
+                                    Cargado
+                                </option>
+
+                                <option
+                                    value="Vacio"
+                                    {% if cita.estado_contenedor=="Vacio" %}
+                                        selected
+                                    {% endif %}
+                                >
+                                    Vacío
+                                </option>
+
+                            </select>
+
+                        </div>
+
+
+                        <div class="col-md-6">
+
+                            <label class="form-label">
+
+                                Tipo operación
+
+                            </label>
+
+                            <select
+                                class="form-select"
+                                name="tipo_operacion"
+                                required
+                            >
+
+                                <option
+                                    value="Retira"
+                                    {% if cita.tipo_operacion=="Retira" %}
+                                        selected
+                                    {% endif %}
+                                >
+                                    Retira
+                                </option>
+
+                                <option
+                                    value="Entrega"
+                                    {% if cita.tipo_operacion=="Entrega" %}
+                                        selected
+                                    {% endif %}
+                                >
+                                    Entrega
+                                </option>
+
+                            </select>
+
+                        </div>
+
+
+                        <div class="col-md-3">
+
+                            <label class="form-label">
+
+                                Fecha
+
+                            </label>
+
+                            <input
+                                type="date"
+                                class="form-control"
+                                name="fecha"
+                                value="{{ cita.fecha }}"
+                                required
+                            >
+
+                        </div>
+
+
+                        <div class="col-md-3">
+
+                            <label class="form-label">
+
+                                Horario
+
+                            </label>
+
+                            <select
+                                class="form-select"
+                                name="horario"
+                                required
+                            >
+
+                                {% for slot in time_slots %}
+
+                                    <option
+                                        value="{{ slot }}"
+                                        {% if cita.horario==slot %}
+                                            selected
+                                        {% endif %}
+                                    >
+
+                                        {{ slot }}
+
+                                    </option>
+
+                                {% endfor %}
+
+                            </select>
+
+                        </div>
+
+                    </div>
+
+                    <button
+                        class="btn btn-success w-100 mt-4"
+                        type="submit"
+                    >
+
                         <i class="bi bi-check-circle-fill me-2"></i>
-                        Guardar Cambios
+
+                        Guardar cambios
+
                     </button>
 
                 </form>
