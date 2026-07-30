@@ -419,15 +419,20 @@ def resolve_cita_naviera(
     return naviera
 
 # =========================================================
-# VALIDAR FECHA SEGÚN ESTADO DEL CONTENEDOR
+# VALIDIDAR FECHA SEGÚN ESTADO DEL CONTENEDOR
 # =========================================================
 def validate_cita_date_by_container_status(
     fecha,
-    estado_contenedor
+    estado_contenedor,
+    user_role=None
 ):
 
     estado = (
         estado_contenedor or ""
+    ).strip().upper()
+
+    role = (
+        user_role or ""
     ).strip().upper()
 
     if estado not in (
@@ -470,8 +475,10 @@ def validate_cita_date_by_container_status(
             "No se pueden crear citas en fechas anteriores."
         )
 
+    # SUPERADMIN puede sacar cita de cargado para hoy.
     if (
         estado == "CARGADO"
+        and role != "SUPERADMIN"
         and fecha_cita <= fecha_hoy
     ):
 
@@ -541,7 +548,8 @@ def create_new_cita(
         fecha=data.get("fecha"),
         estado_contenedor=data.get(
             "estado_contenedor"
-        )
+        ),
+        user_role=user_role
     )
 
     # ================================================
@@ -836,7 +844,8 @@ def update_existing_cita(
                 fecha=nueva_fecha,
                 estado_contenedor=(
                     nuevo_estado_contenedor
-                )
+                ),
+                user_role=user_role
             )
 
         except ValueError as error:

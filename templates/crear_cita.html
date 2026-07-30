@@ -860,12 +860,27 @@
     // =====================================================
     // OBTENER FECHA MÍNIMA SEGÚN ESTADO
     // =====================================================
-    function obtenerFechaMinima(estadoContenedor) {
+    function obtenerFechaMinima(
+        estadoContenedor
+    ) {
 
-        const estado = (estadoContenedor || "").trim().toUpperCase();
+        const estado = (
+            estadoContenedor || ""
+        ).trim().toUpperCase();
 
-        if (estado === "CARGADO") {
-            return sumarUnDia(fechaHoy);
+        const role = (
+            currentUserRole || ""
+        ).trim().toUpperCase();
+
+        if (
+            estado === "CARGADO" &&
+            role !== "SUPERADMIN"
+        ) {
+
+            return sumarUnDia(
+                fechaHoy
+            );
+
         }
 
         return fechaHoy;
