@@ -32,12 +32,41 @@ def generate_time_slots():
 
     for hour in range(8, 17):
 
-        time_slots.extend([
-            f"{hour:02d}:00-{hour:02d}:15",
-            f"{hour:02d}:15-{hour:02d}:30",
-            f"{hour:02d}:30-{hour:02d}:45",
-            f"{hour:02d}:45-{(hour + 1):02d}:00"
-        ])
+        for minute in (0, 15, 30, 45):
+
+            start_hour = hour
+            start_minute = minute
+
+            end_hour = hour
+            end_minute = minute + 15
+
+            if end_minute == 60:
+                end_minute = 0
+                end_hour += 1
+
+            slot = (
+                f"{start_hour:02d}:{start_minute:02d}-"
+                f"{end_hour:02d}:{end_minute:02d}"
+            )
+
+            # ==========================================
+            # HORARIOS NO DISPONIBLES PARA NUEVAS CITAS
+            # ==========================================
+            if slot in (
+                "08:00-08:15",
+                "08:15-08:30",
+                "08:30-08:45",
+                "08:45-09:00",
+                "09:00-09:15",
+                "12:00-12:15",
+                "12:15-12:30",
+                "12:30-12:45",
+                "12:45-13:00",
+                "15:00-15:15"
+            ):
+                continue
+
+            time_slots.append(slot)
 
     return time_slots
 
