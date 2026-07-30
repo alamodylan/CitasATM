@@ -418,6 +418,69 @@ def resolve_cita_naviera(
 
     return naviera
 
+# =========================================================
+# VALIDAR FECHA SEGÚN ESTADO DEL CONTENEDOR
+# =========================================================
+def validate_cita_date_by_container_status(
+    fecha,
+    estado_contenedor
+):
+
+    estado = (
+        estado_contenedor or ""
+    ).strip().upper()
+
+    if estado not in (
+        "CARGADO",
+        "VACIO",
+        "VACÍO"
+    ):
+
+        raise ValueError(
+            "Debe seleccionar el estado del contenedor."
+        )
+
+    try:
+
+        fecha_cita = datetime.strptime(
+            str(fecha),
+            "%Y-%m-%d"
+        ).date()
+
+    except (
+        TypeError,
+        ValueError
+    ):
+
+        raise ValueError(
+            "La fecha seleccionada no es válida."
+        )
+
+    zona_local = pytz.timezone(
+        Config.TIMEZONE
+    )
+
+    fecha_hoy = datetime.now(
+        zona_local
+    ).date()
+
+    if fecha_cita < fecha_hoy:
+
+        raise ValueError(
+            "No se pueden crear citas en fechas anteriores."
+        )
+
+    if (
+        estado == "CARGADO"
+        and fecha_cita <= fecha_hoy
+    ):
+
+        raise ValueError(
+            "Los contenedores cargados deben agendarse "
+            "como mínimo para el día siguiente."
+        )
+
+    return True
 
 # =========================================================
 # CREAR CITA
@@ -430,6 +493,9 @@ def create_new_cita(
     allowed_predios=None
 ):
 
+    # ================================================
+    # VALIDAR PREDIO
+    # ================================================
     try:
 
         predio_id = int(
@@ -447,7 +513,7 @@ def create_new_cita(
         )
 
     # ================================================
-    # VALIDAR PREDIO DEL USUARIO
+    # VALIDAR ACCESO DEL USUARIO AL PREDIO
     # ================================================
     if not validate_predio_access(
         predio_id,
@@ -469,11 +535,46 @@ def create_new_cita(
     )
 
     # ================================================
+    # VALIDAR FECHA SEGÚN ESTADO DEL CONTENEDOR
+    # ================================================
+    validate_cita_date_by_container_status(
+        fecha=data.get("fecha"),
+        estado_contenedor=data.get(
+            "estado_contenedor"
+        )
+    )
+
+    # ================================================
+    # VALIDAR DATOS DE HORARIO
+    # ================================================
+    horario = (
+        data.get("horario") or ""
+    ).strip()
+
+    if not horario:
+
+        raise ValueError(
+            "Debe seleccionar un horario."
+        )
+
+    # ================================================
+    # VALIDAR QUE EL HORARIO ESTÉ HABILITADO
+    # ================================================
+    horarios_habilitados = generate_time_slots()
+
+    if horario not in horarios_habilitados:
+
+        raise ValueError(
+            "El horario seleccionado no está disponible "
+            "para nuevas citas."
+        )
+
+    # ================================================
     # VALIDAR CAPACIDAD
     # ================================================
     has_capacity = validate_slot_capacity(
-        fecha=data["fecha"],
-        horario=data["horario"],
+        fecha=data.get("fecha"),
+        horario=horario,
         predio_id=predio_id
     )
 
@@ -484,13 +585,16 @@ def create_new_cita(
             "el límite de citas."
         )
 
+    # ================================================
+    # CREAR CITA
+    # ================================================
     return create_cita(
         contenedor=data["contenedor"],
         chofer_nombre=data["chofer_nombre"],
         chofer_cedula=data["chofer_cedula"],
         cabezal_placa=data["cabezal_placa"],
         fecha=data["fecha"],
-        horario=data["horario"],
+        horario=horario,
         naviera=naviera,
         estado_contenedor=data["estado_contenedor"],
         tipo_operacion=data["tipo_operacion"],
@@ -560,6 +664,9 @@ def update_existing_cita(
             allowed_predios
         )
 
+    # ================================================
+    # OBTENER CITA EXISTENTE
+    # ================================================
     cita = get_cita_by_id(
         cita_id=cita_id,
         predios=normalized_predios,
@@ -582,6 +689,9 @@ def update_existing_cita(
             )
         }
 
+    # ================================================
+    # VALIDAR ESTADO DE LA CITA
+    # ================================================
     if cita["estado"] != "Pendiente":
 
         return {
@@ -591,6 +701,9 @@ def update_existing_cita(
             )
         }
 
+    # ================================================
+    # VALIDAR PREDIO
+    # ================================================
     try:
 
         predio_id = int(
@@ -610,6 +723,9 @@ def update_existing_cita(
             )
         }
 
+    # ================================================
+    # VALIDAR ACCESO AL PREDIO
+    # ================================================
     if not validate_predio_access(
         predio_id,
         allowed_predios
@@ -623,6 +739,9 @@ def update_existing_cita(
             )
         }
 
+    # ================================================
+    # RESOLVER NAVIERA
+    # ================================================
     try:
 
         naviera = resolve_cita_naviera(
@@ -638,9 +757,127 @@ def update_existing_cita(
             "message": str(error)
         }
 
+    # ================================================
+    # OBTENER NUEVOS DATOS
+    # ================================================
+    nueva_fecha = data.get(
+        "fecha"
+    )
+
+    nuevo_horario = (
+        data.get("horario") or ""
+    ).strip()
+
+    nuevo_estado_contenedor = (
+        data.get("estado_contenedor") or ""
+    ).strip()
+
+    if not nuevo_horario:
+
+        return {
+            "success": False,
+            "message": (
+                "Debe seleccionar un horario."
+            )
+        }
+
+    # ================================================
+    # NORMALIZAR DATOS ACTUALES
+    # ================================================
+    fecha_actual = str(
+        cita.get("fecha") or ""
+    )
+
+    horario_actual = (
+        cita.get("horario") or ""
+    ).strip()
+
+    estado_actual = (
+        cita.get("estado_contenedor") or ""
+    ).strip().upper()
+
+    nueva_fecha_texto = str(
+        nueva_fecha or ""
+    )
+
+    nuevo_estado_normalizado = (
+        nuevo_estado_contenedor
+        .strip()
+        .upper()
+    )
+
+    # ================================================
+    # DETECTAR CAMBIOS DE PROGRAMACIÓN
+    # ================================================
+    fecha_cambio = (
+        nueva_fecha_texto != fecha_actual
+    )
+
+    horario_cambio = (
+        nuevo_horario != horario_actual
+    )
+
+    estado_cambio = (
+        nuevo_estado_normalizado != estado_actual
+    )
+
+    # ================================================
+    # VALIDAR FECHA SEGÚN ESTADO DEL CONTENEDOR
+    #
+    # Una cita antigua puede conservar la fecha y el
+    # estado existentes aunque hoy ya no cumplan la
+    # nueva regla.
+    # ================================================
+    if fecha_cambio or estado_cambio:
+
+        try:
+
+            validate_cita_date_by_container_status(
+                fecha=nueva_fecha,
+                estado_contenedor=(
+                    nuevo_estado_contenedor
+                )
+            )
+
+        except ValueError as error:
+
+            return {
+                "success": False,
+                "message": str(error)
+            }
+
+    # ================================================
+    # VALIDAR HORARIO HABILITADO
+    #
+    # Si mantiene exactamente el horario existente,
+    # se permite conservarlo aunque ahora esté
+    # bloqueado para nuevas citas.
+    # ================================================
+    if horario_cambio:
+
+        horarios_habilitados = (
+            generate_time_slots()
+        )
+
+        if nuevo_horario not in horarios_habilitados:
+
+            return {
+                "success": False,
+                "message": (
+                    "El horario seleccionado no está "
+                    "disponible para nuevas citas."
+                )
+            }
+
+    # ================================================
+    # VALIDAR CAPACIDAD
+    #
+    # Se excluye la cita actual para evitar que se
+    # cuente a sí misma.
+    # ================================================
     has_capacity = validate_slot_capacity(
-        fecha=data.get("fecha"),
-        horario=data.get("horario"),
+        fecha=nueva_fecha,
+        horario=nuevo_horario,
         predio_id=predio_id,
         exclude_cita_id=cita_id
     )
@@ -655,17 +892,28 @@ def update_existing_cita(
             )
         }
 
+    # ================================================
+    # ACTUALIZAR CITA
+    # ================================================
     update_cita(
         cita_id=cita_id,
-        contenedor=data.get("contenedor"),
-        chofer_nombre=data.get("chofer_nombre"),
-        chofer_cedula=data.get("chofer_cedula"),
-        cabezal_placa=data.get("cabezal_placa"),
-        fecha=data.get("fecha"),
-        horario=data.get("horario"),
+        contenedor=data.get(
+            "contenedor"
+        ),
+        chofer_nombre=data.get(
+            "chofer_nombre"
+        ),
+        chofer_cedula=data.get(
+            "chofer_cedula"
+        ),
+        cabezal_placa=data.get(
+            "cabezal_placa"
+        ),
+        fecha=nueva_fecha,
+        horario=nuevo_horario,
         naviera=naviera,
-        estado_contenedor=data.get(
-            "estado_contenedor"
+        estado_contenedor=(
+            nuevo_estado_contenedor
         ),
         tipo_operacion=data.get(
             "tipo_operacion"

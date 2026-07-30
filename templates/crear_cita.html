@@ -517,6 +517,9 @@
                                 value="{{ form_data.get('fecha', '') }}"
                                 min="{{ fecha_hoy }}"
                                 required
+                                {% if not form_data.get('estado_contenedor') %}
+                                    disabled
+                                {% endif %}
                             >
 
                         </div>
@@ -791,6 +794,10 @@
     // =====================================================
     // ELEMENTOS
     // =====================================================
+    const estadoContenedorIndividual = document.getElementById(
+        "estado_contenedor"
+    );
+
     const fechaIndividual = document.getElementById(
         "fecha"
     );
@@ -827,6 +834,41 @@
             .replaceAll(">", "&gt;")
             .replaceAll('"', "&quot;")
             .replaceAll("'", "&#039;");
+
+    }
+
+
+    // =====================================================
+    // SUMAR UN DÍA A UNA FECHA YYYY-MM-DD
+    // =====================================================
+    function sumarUnDia(fechaTexto) {
+
+        const partes = fechaTexto.split("-").map(Number);
+        const fecha = new Date(partes[0], partes[1] - 1, partes[2]);
+
+        fecha.setDate(fecha.getDate() + 1);
+
+        const year = fecha.getFullYear();
+        const month = String(fecha.getMonth() + 1).padStart(2, "0");
+        const day = String(fecha.getDate()).padStart(2, "0");
+
+        return year + "-" + month + "-" + day;
+
+    }
+
+
+    // =====================================================
+    // OBTENER FECHA MÍNIMA SEGÚN ESTADO
+    // =====================================================
+    function obtenerFechaMinima(estadoContenedor) {
+
+        const estado = (estadoContenedor || "").trim().toUpperCase();
+
+        if (estado === "CARGADO") {
+            return sumarUnDia(fechaHoy);
+        }
+
+        return fechaHoy;
 
     }
 
@@ -1008,7 +1050,7 @@
 
         const emptyOption =
             '<option value="" selected disabled>' +
-            'Seleccione una fecha' +
+            'Primero seleccione el estado' +
             '</option>';
 
         return emptyOption;
@@ -1130,6 +1172,7 @@
                     name="fecha"
                     min="${escapeHtml(fechaHoy)}"
                     required
+                    disabled
                 >
             </td>
 
@@ -1155,6 +1198,10 @@
             </td>
         `;
 
+        const estadoSelect = tr.querySelector(
+            '[name="estado_contenedor"]'
+        );
+
         const fechaInput = tr.querySelector(
             '[name="fecha"]'
         );
@@ -1163,9 +1210,39 @@
             '[name="horario"]'
         );
 
+        estadoSelect.addEventListener(
+            "change",
+            function () {
+
+                fechaInput.value = "";
+                fechaInput.min = obtenerFechaMinima(estadoSelect.value);
+                fechaInput.disabled = false;
+
+                setHorarioMessage(
+                    horarioSelect,
+                    "Seleccione una fecha"
+                );
+
+            }
+        );
+
         fechaInput.addEventListener(
             "change",
             function () {
+
+                if (!estadoSelect.value) {
+
+                    fechaInput.value = "";
+                    fechaInput.disabled = true;
+
+                    setHorarioMessage(
+                        horarioSelect,
+                        "Primero seleccione el estado"
+                    );
+
+                    return;
+
+                }
 
                 cargarHorarios(
                     fechaInput.value,
@@ -1451,11 +1528,89 @@
 
 
     // =====================================================
+    // CONFIGURAR FECHA SEGÚN ESTADO DEL CONTENEDOR
+    // =====================================================
+    function configurarFechaIndividual(conservarValores=false) {
+
+        const estado = (estadoContenedorIndividual.value || "").trim();
+
+        if (!estado) {
+
+            fechaIndividual.value = "";
+            fechaIndividual.disabled = true;
+            fechaIndividual.min = fechaHoy;
+
+            setHorarioMessage(
+                horarioIndividual,
+                "Primero seleccione el estado del contenedor"
+            );
+
+            return;
+
+        }
+
+        const fechaMinima = obtenerFechaMinima(estado);
+
+        fechaIndividual.min = fechaMinima;
+        fechaIndividual.disabled = false;
+
+        if (!conservarValores) {
+
+            fechaIndividual.value = "";
+
+            setHorarioMessage(
+                horarioIndividual,
+                "Seleccione una fecha"
+            );
+
+            return;
+
+        }
+
+        if (
+            fechaIndividual.value &&
+            fechaIndividual.value < fechaMinima
+        ) {
+
+            fechaIndividual.value = "";
+
+            setHorarioMessage(
+                horarioIndividual,
+                "Seleccione una fecha"
+            );
+
+        }
+
+    }
+
+
+    // =====================================================
     // EVENTOS DE CITA INDIVIDUAL
     // =====================================================
+    estadoContenedorIndividual.addEventListener(
+        "change",
+        function () {
+            configurarFechaIndividual(false);
+        }
+    );
+
     fechaIndividual.addEventListener(
         "change",
         function () {
+
+            if (!estadoContenedorIndividual.value) {
+
+                fechaIndividual.value = "";
+                fechaIndividual.disabled = true;
+
+                setHorarioMessage(
+                    horarioIndividual,
+                    "Primero seleccione el estado del contenedor"
+                );
+
+                return;
+
+            }
 
             cargarHorarios(
                 fechaIndividual.value,
@@ -1481,9 +1636,14 @@
 
 
     // =====================================================
-    // CARGAR HORARIO INDIVIDUAL AL ABRIR LA PÁGINA
+    // CARGA INICIAL DE ESTADO, FECHA Y HORARIO
     // =====================================================
-    if (fechaIndividual.value) {
+    configurarFechaIndividual(true);
+
+    if (
+        estadoContenedorIndividual.value &&
+        fechaIndividual.value
+    ) {
 
         cargarHorarios(
             fechaIndividual.value,
@@ -1491,11 +1651,18 @@
             horarioSeleccionadoInicial
         );
 
-    } else {
+    } else if (estadoContenedorIndividual.value) {
 
         setHorarioMessage(
             horarioIndividual,
             "Seleccione una fecha"
+        );
+
+    } else {
+
+        setHorarioMessage(
+            horarioIndividual,
+            "Primero seleccione el estado del contenedor"
         );
 
     }
