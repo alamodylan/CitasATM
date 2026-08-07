@@ -274,6 +274,8 @@ def create_merchant_excel(
 
     fecha_generacion = datetime.now(
         zona_local
+    ).replace(
+        tzinfo=None
     )
 
     naviera_texto = (
@@ -772,3 +774,21 @@ def create_merchant_excel(
     )
 
     return output
+
+def excel_safe_value(
+    value
+):
+
+    if (
+        isinstance(
+            value,
+            datetime
+        )
+        and value.tzinfo is not None
+    ):
+
+        return value.replace(
+            tzinfo=None
+        )
+
+    return value
