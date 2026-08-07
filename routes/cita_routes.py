@@ -1115,21 +1115,6 @@ def cancelar_cita(cita_id):
     )
 
 # =========================================================
-# GUARDAR ANOTACIÓN EN CITA VENCIDA
-# =========================================================
-@cita_bp.route(
-    "/guardar-anotacion/<int:cita_id>",
-    methods=["POST"]
-)
-@login_required
-@role_required([
-    "SUPERADMIN",
-    "ADMIN",
-    "PREDIO",
-    "GUARDA"
-])
-
-# =========================================================
 # GUARDAR ANOTACIÓN EN CITA
 # =========================================================
 @cita_bp.route(
