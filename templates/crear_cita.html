@@ -168,18 +168,17 @@
                     <div class="row g-3">
 
                         <!-- ====================================== -->
-                        <!-- CONTENEDOR / BOOKING -->
+                        <!-- CONTENEDOR -->
                         <!-- ====================================== -->
                         <div class="col-md-6">
 
                             <label
                                 for="contenedor"
+                                id="labelContenedor"
                                 class="form-label fw-semibold"
                             >
 
-                                Contenedor o BK
-
-                                <span class="text-danger">*</span>
+                                Contenedor
 
                             </label>
 
@@ -189,6 +188,35 @@
                                 id="contenedor"
                                 class="form-control text-uppercase"
                                 value="{{ form_data.get('contenedor', '') }}"
+                                maxlength="20"
+                                autocomplete="off"
+                            >
+
+                        </div>
+
+
+                        <!-- ====================================== -->
+                        <!-- BK / BL -->
+                        <!-- ====================================== -->
+                        <div class="col-md-6">
+
+                            <label
+                                for="bk_bl"
+                                class="form-label fw-semibold"
+                            >
+
+                                BK / BL
+
+                                <span class="text-danger">*</span>
+
+                            </label>
+
+                            <input
+                                type="text"
+                                name="bk_bl"
+                                id="bk_bl"
+                                class="form-control text-uppercase"
+                                value="{{ form_data.get('bk_bl', '') }}"
                                 maxlength="50"
                                 autocomplete="off"
                                 required
@@ -620,7 +648,8 @@
 
                             <tr>
 
-                                <th>Contenedor/BK</th>
+                                <th>Contenedor</th>
+                                <th>BK / BL</th>
                                 <th>Chofer</th>
                                 <th>Cédula</th>
                                 <th>Placa</th>
@@ -794,8 +823,20 @@
     // =====================================================
     // ELEMENTOS
     // =====================================================
+    const contenedorIndividual = document.getElementById(
+        "contenedor"
+    );
+
+    const labelContenedorIndividual = document.getElementById(
+        "labelContenedor"
+    );
+
     const estadoContenedorIndividual = document.getElementById(
         "estado_contenedor"
+    );
+
+    const tipoOperacionIndividual = document.getElementById(
+        "tipo_operacion"
     );
 
     const fechaIndividual = document.getElementById(
@@ -884,6 +925,48 @@
         }
 
         return fechaHoy;
+
+    }
+
+
+    // =====================================================
+    // ACTUALIZAR OBLIGATORIEDAD DEL CONTENEDOR
+    // =====================================================
+    function actualizarRequeridoContenedorIndividual() {
+
+        const estado = (
+            estadoContenedorIndividual.value || ""
+        ).trim().toUpperCase();
+
+        const operacion = (
+            tipoOperacionIndividual.value || ""
+        ).trim().toUpperCase();
+
+        const contenedorOpcional = (
+            (
+                estado === "VACIO" ||
+                estado === "VACÍO"
+            )
+            &&
+            operacion === "RETIRA"
+        );
+
+        contenedorIndividual.required =
+            !contenedorOpcional;
+
+        if (contenedorOpcional) {
+
+            labelContenedorIndividual.innerHTML =
+                'Contenedor ' +
+                '<span class="text-muted fw-normal">(Opcional)</span>';
+
+        } else {
+
+            labelContenedorIndividual.innerHTML =
+                'Contenedor ' +
+                '<span class="text-danger">*</span>';
+
+        }
 
     }
 
@@ -1118,6 +1201,15 @@
                 <input
                     class="form-control form-control-sm text-uppercase"
                     name="contenedor"
+                    maxlength="20"
+                    required
+                >
+            </td>
+
+            <td>
+                <input
+                    class="form-control form-control-sm text-uppercase"
+                    name="bk_bl"
                     maxlength="50"
                     required
                 >
@@ -1213,8 +1305,16 @@
             </td>
         `;
 
+        const contenedorInput = tr.querySelector(
+            '[name="contenedor"]'
+        );
+
         const estadoSelect = tr.querySelector(
             '[name="estado_contenedor"]'
+        );
+
+        const tipoOperacionSelect = tr.querySelector(
+            '[name="tipo_operacion"]'
         );
 
         const fechaInput = tr.querySelector(
@@ -1225,12 +1325,40 @@
             '[name="horario"]'
         );
 
+        function actualizarRequeridoContenedorFila() {
+
+            const estado = (
+                estadoSelect.value || ""
+            ).trim().toUpperCase();
+
+            const operacion = (
+                tipoOperacionSelect.value || ""
+            ).trim().toUpperCase();
+
+            const contenedorOpcional = (
+                (
+                    estado === "VACIO" ||
+                    estado === "VACÍO"
+                )
+                &&
+                operacion === "RETIRA"
+            );
+
+            contenedorInput.required =
+                !contenedorOpcional;
+
+        }
+
         estadoSelect.addEventListener(
             "change",
             function () {
 
+                actualizarRequeridoContenedorFila();
+
                 fechaInput.value = "";
-                fechaInput.min = obtenerFechaMinima(estadoSelect.value);
+                fechaInput.min = obtenerFechaMinima(
+                    estadoSelect.value
+                );
                 fechaInput.disabled = false;
 
                 setHorarioMessage(
@@ -1240,6 +1368,13 @@
 
             }
         );
+
+        tipoOperacionSelect.addEventListener(
+            "change",
+            actualizarRequeridoContenedorFila
+        );
+
+        actualizarRequeridoContenedorFila();
 
         fechaInput.addEventListener(
             "change",
@@ -1396,6 +1531,11 @@
                     contenedor: fieldValue(
                         fila,
                         "contenedor"
+                    ).toUpperCase(),
+
+                    bk_bl: fieldValue(
+                        fila,
+                        "bk_bl"
                     ).toUpperCase(),
 
                     chofer_nombre: fieldValue(
@@ -1605,8 +1745,19 @@
     estadoContenedorIndividual.addEventListener(
         "change",
         function () {
-            configurarFechaIndividual(false);
+
+            actualizarRequeridoContenedorIndividual();
+
+            configurarFechaIndividual(
+                false
+            );
+
         }
+    );
+
+    tipoOperacionIndividual.addEventListener(
+        "change",
+        actualizarRequeridoContenedorIndividual
     );
 
     fechaIndividual.addEventListener(
@@ -1653,6 +1804,8 @@
     // =====================================================
     // CARGA INICIAL DE ESTADO, FECHA Y HORARIO
     // =====================================================
+    actualizarRequeridoContenedorIndividual();
+
     configurarFechaIndividual(true);
 
     if (

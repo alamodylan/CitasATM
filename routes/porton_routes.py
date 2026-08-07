@@ -23,6 +23,11 @@ from services.porton_service import (
     get_porton_stats
 )
 
+from services.audit_service import (
+    safe_log_action
+)
+
+
 # =========================================================
 # BLUEPRINT
 # =========================================================
@@ -204,6 +209,35 @@ def confirmar_cita_porton(cita_id):
                 cita_id=cita_id
             )
         )
+
+    # =====================================================
+    # AUDITORÍA
+    # =====================================================
+    safe_log_action(
+        action="COMPLETAR_CITA",
+        module="PORTON",
+        entity_id=cita_id,
+        details={
+            "contenedor_solicitud": cita.get(
+                "contenedor"
+            ),
+            "bk_bl": cita.get(
+                "bk_bl"
+            ),
+            "contenedor_registrado": (
+                contenedor_registrado
+            ),
+            "servicio_terminal": (
+                servicio_terminal
+            ),
+            "naviera": cita.get(
+                "naviera"
+            ),
+            "predio_id": cita.get(
+                "predio_id"
+            )
+        }
+    )
 
     flash(
         "Cita confirmada correctamente.",

@@ -339,9 +339,11 @@
                         <th>Horario</th>
                         <th>Chofer</th>
                         <th>Placa</th>
-                        <th>Contenedor / BK</th>
+                        <th>Contenedor</th>
+                        <th>BK / BL</th>
                         <th>Naviera</th>
                         <th>Operación</th>
+                        <th>Condición</th>
                         <th>Estado</th>
 
                         {% if current_user.role in [
@@ -423,12 +425,24 @@
 
 
                         <!-- ============================== -->
-                        <!-- CONTENEDOR / BOOKING -->
+                        <!-- CONTENEDOR -->
                         <!-- ============================== -->
                         <td>
 
                             <span class="fw-semibold">
                                 {{ cita.contenedor or "-" }}
+                            </span>
+
+                        </td>
+
+
+                        <!-- ============================== -->
+                        <!-- BK / BL -->
+                        <!-- ============================== -->
+                        <td>
+
+                            <span class="fw-semibold">
+                                {{ cita.bk_bl or "-" }}
                             </span>
 
                         </td>
@@ -453,6 +467,34 @@
                         <!-- ============================== -->
                         <td>
                             {{ cita.tipo_operacion or "-" }}
+                        </td>
+
+
+                        <!-- ============================== -->
+                        <!-- CONDICIÓN DEL CONTENEDOR -->
+                        <!-- ============================== -->
+                        <td>
+
+                            {% if cita.estado_contenedor == "Cargado" %}
+
+                                <span class="badge bg-primary">
+                                    Cargado
+                                </span>
+
+                            {% elif cita.estado_contenedor == "Vacio" %}
+
+                                <span class="badge bg-light text-dark border">
+                                    Vacío
+                                </span>
+
+                            {% else %}
+
+                                <span class="badge bg-secondary">
+                                    {{ cita.estado_contenedor or "-" }}
+                                </span>
+
+                            {% endif %}
+
                         </td>
 
 
@@ -750,11 +792,23 @@
                             <div class="col-6">
 
                                 <small class="text-muted">
-                                    Contenedor / BK
+                                    Contenedor
                                 </small>
 
                                 <div class="fw-semibold">
                                     {{ cita.contenedor or "-" }}
+                                </div>
+
+                            </div>
+
+                            <div class="col-6">
+
+                                <small class="text-muted">
+                                    BK / BL
+                                </small>
+
+                                <div class="fw-semibold">
+                                    {{ cita.bk_bl or "-" }}
                                 </div>
 
                             </div>
@@ -767,6 +821,22 @@
 
                                 <div class="fw-semibold">
                                     {{ cita.naviera or "-" }}
+                                </div>
+
+                            </div>
+
+                            <div class="col-6">
+
+                                <small class="text-muted">
+                                    Condición
+                                </small>
+
+                                <div class="fw-semibold">
+                                    {% if cita.estado_contenedor == "Vacio" %}
+                                        Vacío
+                                    {% else %}
+                                        {{ cita.estado_contenedor or "-" }}
+                                    {% endif %}
                                 </div>
 
                             </div>

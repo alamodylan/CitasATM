@@ -16,6 +16,13 @@ from services.auth_service import (
     login_required
 )
 
+from services.audit_service import (
+    log_login_success,
+    log_login_failed,
+    log_logout
+)
+
+
 # =========================================================
 # BLUEPRINT
 # =========================================================
@@ -28,7 +35,13 @@ auth_bp = Blueprint(
 # =========================================================
 # LOGIN
 # =========================================================
-@auth_bp.route("/login", methods=["GET", "POST"])
+@auth_bp.route(
+    "/login",
+    methods=[
+        "GET",
+        "POST"
+    ]
+)
 def login():
 
     # =====================================================
@@ -47,22 +60,42 @@ def login():
 
         username = (
             request.form
-            .get("username", "")
+            .get(
+                "username",
+                ""
+            )
             .strip()
         )
 
         password = (
             request.form
-            .get("password", "")
+            .get(
+                "password",
+                ""
+            )
             .strip()
         )
 
+        # ================================================
+        # INTENTAR LOGIN
+        # ================================================
         result = login_user(
             username,
             password
         )
 
+        # ================================================
+        # LOGIN FALLIDO
+        # ================================================
         if not result["success"]:
+
+            log_login_failed(
+                username=username,
+                reason=result.get(
+                    "message",
+                    "Login fallido"
+                )
+            )
 
             flash(
                 result["message"],
@@ -73,8 +106,18 @@ def login():
                 "login.html"
             )
 
+        # ================================================
+        # LOGIN EXITOSO
+        # ================================================
+        log_login_success(
+            result["user"]
+        )
+
         flash(
-            f"Bienvenido {result['user']['username']}",
+            (
+                f"Bienvenido "
+                f"{result['user']['username']}"
+            ),
             "success"
         )
 
@@ -97,6 +140,14 @@ def login():
 @login_required
 def logout():
 
+    # =====================================================
+    # AUDITAR ANTES DE BORRAR SESIÓN
+    # =====================================================
+    log_logout()
+
+    # =====================================================
+    # CERRAR SESIÓN
+    # =====================================================
     logout_user()
 
     flash(

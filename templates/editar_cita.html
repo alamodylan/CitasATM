@@ -113,18 +113,17 @@ Editar Cita | ATM Citas
                     <div class="row g-3">
 
                         <!-- ====================================== -->
-                        <!-- CONTENEDOR / BOOKING -->
+                        <!-- CONTENEDOR -->
                         <!-- ====================================== -->
                         <div class="col-md-6">
 
                             <label
                                 for="contenedor"
+                                id="labelContenedor"
                                 class="form-label fw-semibold"
                             >
 
-                                Contenedor / BK
-
-                                <span class="text-danger">*</span>
+                                Contenedor
 
                             </label>
 
@@ -134,6 +133,35 @@ Editar Cita | ATM Citas
                                 class="form-control text-uppercase"
                                 name="contenedor"
                                 value="{{ cita.contenedor or '' }}"
+                                maxlength="20"
+                                autocomplete="off"
+                            >
+
+                        </div>
+
+
+                        <!-- ====================================== -->
+                        <!-- BK / BL -->
+                        <!-- ====================================== -->
+                        <div class="col-md-6">
+
+                            <label
+                                for="bk_bl"
+                                class="form-label fw-semibold"
+                            >
+
+                                BK / BL
+
+                                <span class="text-danger">*</span>
+
+                            </label>
+
+                            <input
+                                type="text"
+                                id="bk_bl"
+                                class="form-control text-uppercase"
+                                name="bk_bl"
+                                value="{{ cita.bk_bl or '' }}"
                                 maxlength="50"
                                 autocomplete="off"
                                 required
@@ -578,6 +606,22 @@ Editar Cita | ATM Citas
     // =====================================================
     // ELEMENTOS
     // =====================================================
+    const contenedorInput = document.getElementById(
+        "contenedor"
+    );
+
+    const labelContenedor = document.getElementById(
+        "labelContenedor"
+    );
+
+    const estadoContenedorSelect = document.getElementById(
+        "estado_contenedor"
+    );
+
+    const tipoOperacionSelect = document.getElementById(
+        "tipo_operacion"
+    );
+
     const fechaInput = document.getElementById(
         "fecha"
     );
@@ -585,6 +629,48 @@ Editar Cita | ATM Citas
     const horarioSelect = document.getElementById(
         "horario"
     );
+
+
+    // =====================================================
+    // ACTUALIZAR OBLIGATORIEDAD DEL CONTENEDOR
+    // =====================================================
+    function actualizarRequeridoContenedor() {
+
+        const estado = (
+            estadoContenedorSelect.value || ""
+        ).trim().toUpperCase();
+
+        const operacion = (
+            tipoOperacionSelect.value || ""
+        ).trim().toUpperCase();
+
+        const contenedorOpcional = (
+            (
+                estado === "VACIO" ||
+                estado === "VACÍO"
+            )
+            &&
+            operacion === "RETIRA"
+        );
+
+        contenedorInput.required =
+            !contenedorOpcional;
+
+        if (contenedorOpcional) {
+
+            labelContenedor.innerHTML =
+                'Contenedor ' +
+                '<span class="text-muted fw-normal">(Opcional)</span>';
+
+        } else {
+
+            labelContenedor.innerHTML =
+                'Contenedor ' +
+                '<span class="text-danger">*</span>';
+
+        }
+
+    }
 
 
     // =====================================================
@@ -758,6 +844,20 @@ Editar Cita | ATM Citas
 
 
     // =====================================================
+    // EVENTOS DE ESTADO Y OPERACIÓN
+    // =====================================================
+    estadoContenedorSelect.addEventListener(
+        "change",
+        actualizarRequeridoContenedor
+    );
+
+    tipoOperacionSelect.addEventListener(
+        "change",
+        actualizarRequeridoContenedor
+    );
+
+
+    // =====================================================
     // EVENTO DE CAMBIO DE FECHA
     // =====================================================
     fechaInput.addEventListener(
@@ -775,6 +875,8 @@ Editar Cita | ATM Citas
     // =====================================================
     // CARGA INICIAL
     // =====================================================
+    actualizarRequeridoContenedor();
+
     if (fechaInput.value) {
 
         cargarHorarios(

@@ -1,0 +1,453 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Reporte Merchant | ATM Citas
+{% endblock %}
+
+{% block content %}
+
+<!-- ================================================== -->
+<!-- HEADER -->
+<!-- ================================================== -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+
+    <div>
+
+        <h2 class="fw-bold mb-1">
+
+            Reporte Merchant
+
+        </h2>
+
+        <p class="text-muted mb-0">
+
+            Reporte de citas completadas por rango de fechas
+
+        </p>
+
+        <div class="mt-2">
+
+            <span class="badge bg-dark fs-6">
+
+                Predio activo:
+                {{ active_predio_nombre }}
+
+            </span>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ================================================== -->
+<!-- FILTROS -->
+<!-- ================================================== -->
+<div class="card card-custom mb-4">
+
+    <div class="card-header-custom">
+
+        <i class="bi bi-funnel-fill me-2"></i>
+
+        Filtros
+
+    </div>
+
+    <div class="card-body">
+
+        <form method="POST">
+
+            <div class="row g-3 align-items-end">
+
+                <!-- ====================== -->
+                <!-- FECHA DESDE -->
+                <!-- ====================== -->
+                <div class="col-md-3">
+
+                    <label
+                        class="form-label fw-semibold"
+                    >
+
+                        Fecha Desde
+
+                    </label>
+
+                    <input
+                        type="date"
+                        name="fecha_desde"
+                        class="form-control"
+                        required
+                        value="{{ form_data.fecha_desde }}"
+                    >
+
+                </div>
+
+
+                <!-- ====================== -->
+                <!-- FECHA HASTA -->
+                <!-- ====================== -->
+                <div class="col-md-3">
+
+                    <label
+                        class="form-label fw-semibold"
+                    >
+
+                        Fecha Hasta
+
+                    </label>
+
+                    <input
+                        type="date"
+                        name="fecha_hasta"
+                        class="form-control"
+                        required
+                        value="{{ form_data.fecha_hasta }}"
+                    >
+
+                </div>
+
+
+                <!-- ====================== -->
+                <!-- NAVIERA -->
+                <!-- ====================== -->
+                <div class="col-md-3">
+
+                    <label
+                        class="form-label fw-semibold"
+                    >
+
+                        Naviera
+
+                    </label>
+
+                    <select
+                        name="naviera"
+                        class="form-select"
+                    >
+
+                        <option
+                            value="TODAS"
+                            {% if form_data.naviera == "TODAS" %}
+                                selected
+                            {% endif %}
+                        >
+
+                            Todas
+
+                        </option>
+
+                        {% for naviera in navieras %}
+
+                        <option
+                            value="{{ naviera }}"
+                            {% if form_data.naviera == naviera %}
+                                selected
+                            {% endif %}
+                        >
+
+                            {{ naviera }}
+
+                        </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+
+                <!-- ====================== -->
+                <!-- BOTÓN -->
+                <!-- ====================== -->
+                <div class="col-md-3">
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary w-100"
+                    >
+
+                        <i class="bi bi-search me-2"></i>
+
+                        Generar Reporte
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+<!-- ================================================== -->
+<!-- ERROR -->
+<!-- ================================================== -->
+{% if error %}
+
+<div class="alert alert-danger rounded-4">
+
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+
+    {{ error }}
+
+</div>
+
+{% endif %}
+
+
+<!-- ================================================== -->
+<!-- RESULTADOS -->
+<!-- ================================================== -->
+<div class="card card-custom">
+
+    <div
+        class="
+            card-header-custom
+            d-flex
+            justify-content-between
+            align-items-center
+            flex-wrap
+            gap-2
+        "
+    >
+
+        <div>
+
+            <i class="bi bi-file-earmark-bar-graph-fill me-2"></i>
+
+            Resultados
+
+        </div>
+
+
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+
+            <!-- ====================================== -->
+            <!-- TOTAL -->
+            <!-- ====================================== -->
+            <span class="badge bg-primary">
+
+                {{ total }} registros
+
+            </span>
+
+
+            <!-- ====================================== -->
+            <!-- EXPORTAR EXCEL -->
+            <!-- ====================================== -->
+            {% if registros %}
+
+            <form
+                method="POST"
+                action="{{ url_for('reportes.merchant_report_excel') }}"
+                class="d-inline"
+            >
+
+                <input
+                    type="hidden"
+                    name="fecha_desde"
+                    value="{{ form_data.fecha_desde }}"
+                >
+
+                <input
+                    type="hidden"
+                    name="fecha_hasta"
+                    value="{{ form_data.fecha_hasta }}"
+                >
+
+                <input
+                    type="hidden"
+                    name="naviera"
+                    value="{{ form_data.naviera }}"
+                >
+
+                <button
+                    type="submit"
+                    class="btn btn-success btn-sm"
+                >
+
+                    <i class="bi bi-file-earmark-excel-fill me-2"></i>
+
+                    Exportar Excel
+
+                </button>
+
+            </form>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+
+    <div class="card-body">
+
+        {% if registros %}
+
+        <div class="table-responsive">
+
+            <table class="table table-hover align-middle">
+
+                <thead>
+
+                    <tr>
+
+                        <th>Contenedor</th>
+                        <th>BK / BL</th>
+                        <th>Fecha</th>
+                        <th>Servicio Terminal</th>
+                        <th>Chofer</th>
+                        <th>Placa</th>
+                        <th>Naviera</th>
+                        <th>Predio</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    {% for row in registros %}
+
+                    <tr>
+
+                        <!-- ============================== -->
+                        <!-- CONTENEDOR -->
+                        <!-- ============================== -->
+                        <td>
+
+                            <span class="fw-semibold">
+
+                                {{ row.contenedor_reporte }}
+
+                            </span>
+
+                        </td>
+
+
+                        <!-- ============================== -->
+                        <!-- BK / BL -->
+                        <!-- ============================== -->
+                        <td>
+
+                            {{ row.bk_bl }}
+
+                        </td>
+
+
+                        <!-- ============================== -->
+                        <!-- FECHA -->
+                        <!-- ============================== -->
+                        <td>
+
+                            {{ row.fecha }}
+
+                        </td>
+
+
+                        <!-- ============================== -->
+                        <!-- SERVICIO TERMINAL -->
+                        <!-- ============================== -->
+                        <td>
+
+                            <span class="fw-semibold">
+
+                                {{ row.servicio_terminal }}
+
+                            </span>
+
+                        </td>
+
+
+                        <!-- ============================== -->
+                        <!-- CHOFER -->
+                        <!-- ============================== -->
+                        <td>
+
+                            {{ row.chofer_nombre }}
+
+                        </td>
+
+
+                        <!-- ============================== -->
+                        <!-- PLACA -->
+                        <!-- ============================== -->
+                        <td>
+
+                            {{ row.cabezal_placa }}
+
+                        </td>
+
+
+                        <!-- ============================== -->
+                        <!-- NAVIERA -->
+                        <!-- ============================== -->
+                        <td>
+
+                            <span class="badge bg-secondary">
+
+                                {{ row.naviera }}
+
+                            </span>
+
+                        </td>
+
+
+                        <!-- ============================== -->
+                        <!-- PREDIO -->
+                        <!-- ============================== -->
+                        <td>
+
+                            {{ row.predio_nombre }}
+
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        {% else %}
+
+        <!-- ========================================== -->
+        <!-- SIN RESULTADOS -->
+        <!-- ========================================== -->
+        <div class="text-center py-5">
+
+            <i
+                class="bi bi-file-earmark-x-fill text-secondary"
+                style="font-size:4rem;"
+            ></i>
+
+            <h4 class="fw-bold mt-4">
+
+                No hay resultados
+
+            </h4>
+
+            <p class="text-muted">
+
+                Seleccione un rango de fechas y genere el reporte.
+
+            </p>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+{% endblock %}

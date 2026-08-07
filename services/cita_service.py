@@ -542,7 +542,59 @@ def create_new_cita(
     )
 
     # ================================================
-    # VALIDAR FECHA SEGÚN ESTADO DEL CONTENEDOR
+    # VALIDAR BK / BL
+    # ================================================
+    bk_bl = (
+        data.get("bk_bl") or ""
+    ).strip().upper()
+
+    if not bk_bl:
+
+        raise ValueError(
+            "Debe ingresar el BK / BL."
+        )
+
+    # ================================================
+    # NORMALIZAR DATOS OPERATIVOS
+    # ================================================
+    contenedor = (
+        data.get("contenedor") or ""
+    ).strip().upper()
+
+    estado_contenedor = (
+        data.get("estado_contenedor") or ""
+    ).strip().upper()
+
+    tipo_operacion = (
+        data.get("tipo_operacion") or ""
+    ).strip().upper()
+
+    # ================================================
+    # VALIDAR CONTENEDOR
+    #
+    # ÚNICAMENTE ES OPCIONAL CUANDO:
+    #   ESTADO = VACÍO
+    #   OPERACIÓN = RETIRA
+    # ================================================
+    contenedor_requerido = not (
+        estado_contenedor in (
+            "VACIO",
+            "VACÍO"
+        )
+        and tipo_operacion == "RETIRA"
+    )
+
+    if (
+        contenedor_requerido
+        and not contenedor
+    ):
+
+        raise ValueError(
+            "Debe ingresar el número de contenedor."
+        )
+
+    # ================================================
+    # VALIDAR FECHA SEGÚN ESTADO
     # ================================================
     validate_cita_date_by_container_status(
         fecha=data.get("fecha"),
@@ -553,7 +605,7 @@ def create_new_cita(
     )
 
     # ================================================
-    # VALIDAR DATOS DE HORARIO
+    # VALIDAR HORARIO
     # ================================================
     horario = (
         data.get("horario") or ""
@@ -568,25 +620,20 @@ def create_new_cita(
     # ================================================
     # VALIDAR QUE EL HORARIO ESTÉ HABILITADO
     # ================================================
-    horarios_habilitados = generate_time_slots()
-
-    if horario not in horarios_habilitados:
+    if horario not in generate_time_slots():
 
         raise ValueError(
-            "El horario seleccionado no está disponible "
-            "para nuevas citas."
+            "El horario seleccionado no está disponible."
         )
 
     # ================================================
     # VALIDAR CAPACIDAD
     # ================================================
-    has_capacity = validate_slot_capacity(
-        fecha=data.get("fecha"),
+    if not validate_slot_capacity(
+        fecha=data["fecha"],
         horario=horario,
         predio_id=predio_id
-    )
-
-    if not has_capacity:
+    ):
 
         raise ValueError(
             "El horario seleccionado ya alcanzó "
@@ -597,7 +644,8 @@ def create_new_cita(
     # CREAR CITA
     # ================================================
     return create_cita(
-        contenedor=data["contenedor"],
+        contenedor=contenedor,
+        bk_bl=bk_bl,
         chofer_nombre=data["chofer_nombre"],
         chofer_cedula=data["chofer_cedula"],
         cabezal_placa=data["cabezal_placa"],
@@ -766,6 +814,70 @@ def update_existing_cita(
         }
 
     # ================================================
+    # VALIDAR BK / BL
+    # ================================================
+    bk_bl = (
+        data.get("bk_bl") or ""
+    ).strip().upper()
+
+    if not bk_bl:
+
+        return {
+            "success": False,
+            "message": (
+                "Debe ingresar el BK / BL."
+            )
+        }
+
+    # ================================================
+    # NORMALIZAR DATOS OPERATIVOS
+    # ================================================
+    contenedor = (
+        data.get("contenedor") or ""
+    ).strip().upper()
+
+    nuevo_estado_contenedor = (
+        data.get("estado_contenedor") or ""
+    ).strip()
+
+    nuevo_estado_normalizado = (
+        nuevo_estado_contenedor
+        .strip()
+        .upper()
+    )
+
+    tipo_operacion = (
+        data.get("tipo_operacion") or ""
+    ).strip().upper()
+
+    # ================================================
+    # VALIDAR CONTENEDOR
+    #
+    # ÚNICAMENTE ES OPCIONAL CUANDO:
+    #   ESTADO = VACÍO
+    #   OPERACIÓN = RETIRA
+    # ================================================
+    contenedor_requerido = not (
+        nuevo_estado_normalizado in (
+            "VACIO",
+            "VACÍO"
+        )
+        and tipo_operacion == "RETIRA"
+    )
+
+    if (
+        contenedor_requerido
+        and not contenedor
+    ):
+
+        return {
+            "success": False,
+            "message": (
+                "Debe ingresar el número de contenedor."
+            )
+        }
+
+    # ================================================
     # OBTENER NUEVOS DATOS
     # ================================================
     nueva_fecha = data.get(
@@ -774,10 +886,6 @@ def update_existing_cita(
 
     nuevo_horario = (
         data.get("horario") or ""
-    ).strip()
-
-    nuevo_estado_contenedor = (
-        data.get("estado_contenedor") or ""
     ).strip()
 
     if not nuevo_horario:
@@ -806,12 +914,6 @@ def update_existing_cita(
 
     nueva_fecha_texto = str(
         nueva_fecha or ""
-    )
-
-    nuevo_estado_normalizado = (
-        nuevo_estado_contenedor
-        .strip()
-        .upper()
     )
 
     # ================================================
@@ -906,9 +1008,8 @@ def update_existing_cita(
     # ================================================
     update_cita(
         cita_id=cita_id,
-        contenedor=data.get(
-            "contenedor"
-        ),
+        contenedor=contenedor,
+        bk_bl=bk_bl,
         chofer_nombre=data.get(
             "chofer_nombre"
         ),

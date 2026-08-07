@@ -42,6 +42,10 @@ from models.predio_model import (
     get_predios_by_user
 )
 
+from services.audit_service import (
+    safe_log_action
+)
+
 
 # =========================================================
 # BLUEPRINT
@@ -258,6 +262,12 @@ def build_cita_form_data(
         "contenedor": (
             request.form.get(
                 "contenedor"
+            ) or ""
+        ).strip().upper(),
+
+        "bk_bl": (
+            request.form.get(
+                "bk_bl"
             ) or ""
         ).strip().upper(),
 
@@ -676,6 +686,34 @@ def crear_cita():
                 ]
             )
 
+            safe_log_action(
+                action="CREAR_CITA",
+                module="CITAS",
+                details={
+                    "bk_bl": form_data.get(
+                        "bk_bl"
+                    ),
+                    "contenedor": form_data.get(
+                        "contenedor"
+                    ),
+                    "naviera": (
+                        context["naviera"]
+                        or form_data.get(
+                            "naviera"
+                        )
+                    ),
+                    "predio_id": form_data.get(
+                        "predio_id"
+                    ),
+                    "fecha": form_data.get(
+                        "fecha"
+                    ),
+                    "horario": form_data.get(
+                        "horario"
+                    )
+                }
+            )
+
         except Exception as error:
 
             flash(
@@ -806,6 +844,26 @@ def crear_citas_masivas():
         allowed_predios=context[
             "predio_ids"
         ]
+    )
+
+    safe_log_action(
+        action="CREAR_CITAS_MASIVAS",
+        module="CITAS",
+        details={
+            "creadas": result.get(
+                "created",
+                0
+            ),
+            "errores": len(
+                result.get(
+                    "errors",
+                    []
+                )
+            ),
+            "predio_id": context.get(
+                "predio_id"
+            )
+        }
     )
 
     if result["errors"]:
@@ -941,6 +999,32 @@ def editar_cita(cita_id):
                 fecha_hoy=fecha_hoy
             )
 
+        safe_log_action(
+            action="EDITAR_CITA",
+            module="CITAS",
+            entity_id=cita_id,
+            details={
+                "bk_bl": form_data.get(
+                    "bk_bl"
+                ),
+                "contenedor": form_data.get(
+                    "contenedor"
+                ),
+                "fecha": form_data.get(
+                    "fecha"
+                ),
+                "horario": form_data.get(
+                    "horario"
+                ),
+                "naviera": (
+                    context["naviera"]
+                    or form_data.get(
+                        "naviera"
+                    )
+                )
+            }
+        )
+
         flash(
             result["message"],
             "success"
@@ -1002,6 +1086,17 @@ def cancelar_cita(cita_id):
         naviera=context["naviera"]
     )
 
+    if result["success"]:
+
+        safe_log_action(
+            action="CANCELAR_CITA",
+            module="CITAS",
+            entity_id=cita_id,
+            details={
+                "motivo": motivo_cancelacion
+            }
+        )
+
     flash(
         result["message"],
         (
@@ -1054,6 +1149,28 @@ def eliminar_cita(cita_id):
     result = remove_cita(
         cita_id
     )
+
+    if result["success"]:
+
+        safe_log_action(
+            action="ELIMINAR_CITA",
+            module="CITAS",
+            entity_id=cita_id,
+            details={
+                "bk_bl": cita.get(
+                    "bk_bl"
+                ),
+                "contenedor": cita.get(
+                    "contenedor"
+                ),
+                "naviera": cita.get(
+                    "naviera"
+                ),
+                "predio_id": cita.get(
+                    "predio_id"
+                )
+            }
+        )
 
     flash(
         result.get(

@@ -204,6 +204,7 @@ def get_cita_by_id(
 # =========================================================
 def create_cita(
     contenedor,
+    bk_bl,
     chofer_nombre,
     chofer_cedula,
     cabezal_placa,
@@ -219,6 +220,7 @@ def create_cita(
     query = """
         INSERT INTO citas (
             contenedor,
+            bk_bl,
             chofer_nombre,
             chofer_cedula,
             cabezal_placa,
@@ -241,6 +243,7 @@ def create_cita(
             %s,
             %s,
             %s,
+            %s,
             'Pendiente',
             %s,
             %s
@@ -251,6 +254,7 @@ def create_cita(
         query,
         (
             contenedor,
+            bk_bl,
             chofer_nombre,
             chofer_cedula,
             cabezal_placa,
@@ -271,6 +275,7 @@ def create_cita(
 def update_cita(
     cita_id,
     contenedor,
+    bk_bl,
     chofer_nombre,
     chofer_cedula,
     cabezal_placa,
@@ -286,6 +291,7 @@ def update_cita(
         UPDATE citas
         SET
             contenedor = %s,
+            bk_bl = %s,
             chofer_nombre = %s,
             chofer_cedula = %s,
             cabezal_placa = %s,
@@ -304,6 +310,7 @@ def update_cita(
         query,
         (
             contenedor,
+            bk_bl,
             chofer_nombre,
             chofer_cedula,
             cabezal_placa,

@@ -27,6 +27,10 @@ from services.user_service import (
     reset_user_password
 )
 
+from services.audit_service import (
+    safe_log_action
+)
+
 
 # =========================================================
 # BLUEPRINT
@@ -279,6 +283,24 @@ def crear_usuario():
                 form_data=form_data
             )
 
+        created_user = result.get(
+            "user"
+        ) or {}
+
+        safe_log_action(
+            action="CREAR_USUARIO",
+            module="USUARIOS",
+            entity_id=created_user.get(
+                "id"
+            ),
+            details={
+                "usuario_creado": username,
+                "rol": role,
+                "naviera": naviera,
+                "predios": predios_selected
+            }
+        )
+
         flash(
             "Usuario creado correctamente.",
             "success"
@@ -384,6 +406,19 @@ def editar_predios_usuario(user_id):
                 user_predios_ids=predios_selected
             )
 
+        safe_log_action(
+            action="EDITAR_PREDIOS_USUARIO",
+            module="USUARIOS",
+            entity_id=user_id,
+            details={
+                "usuario": user.get(
+                    "username"
+                ),
+                "predios_anteriores": user_predios_ids,
+                "predios_nuevos": predios_selected
+            }
+        )
+
         flash(
             "Predios actualizados correctamente.",
             "success"
@@ -451,13 +486,35 @@ def cambiar_estado_usuario(user_id):
             url_for("users.usuarios")
         )
 
+    target_user = get_user(
+        user_id
+    )
+
     if activo:
 
         message = "Usuario activado correctamente."
+        audit_action = "ACTIVAR_USUARIO"
 
     else:
 
         message = "Usuario desactivado correctamente."
+        audit_action = "DESACTIVAR_USUARIO"
+
+    safe_log_action(
+        action=audit_action,
+        module="USUARIOS",
+        entity_id=user_id,
+        details={
+            "usuario": (
+                target_user.get(
+                    "username"
+                )
+                if target_user
+                else None
+            ),
+            "activo": activo
+        }
+    )
 
     flash(
         message,
@@ -494,6 +551,25 @@ def desbloquear_usuario(user_id):
         return redirect(
             url_for("users.usuarios")
         )
+
+    target_user = get_user(
+        user_id
+    )
+
+    safe_log_action(
+        action="DESBLOQUEAR_USUARIO",
+        module="USUARIOS",
+        entity_id=user_id,
+        details={
+            "usuario": (
+                target_user.get(
+                    "username"
+                )
+                if target_user
+                else None
+            )
+        }
+    )
 
     flash(
         "Usuario desbloqueado correctamente.",
@@ -585,6 +661,17 @@ def restablecer_password_usuario(user_id):
                 "restablecer_password.html",
                 user=user
             )
+
+        safe_log_action(
+            action="RESTABLECER_PASSWORD",
+            module="USUARIOS",
+            entity_id=user_id,
+            details={
+                "usuario": user.get(
+                    "username"
+                )
+            }
+        )
 
         flash(
             "Contraseña restablecida correctamente.",

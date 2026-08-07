@@ -15,16 +15,21 @@ from routes.dashboard_routes import dashboard_bp
 from routes.export_routes import export_bp
 from routes.user_routes import user_bp
 from routes.predio_routes import predio_bp
+from routes.reporte_routes import reporte_bp
+from routes.audit_routes import audit_bp
+
 
 # =========================================================
 # CREACIÓN DE APP
 # =========================================================
 app = Flask(__name__)
 
+
 # =========================================================
 # CONFIGURACIÓN
 # =========================================================
 app.config.from_object(Config)
+
 
 # =========================================================
 # REGISTRO DE BLUEPRINTS
@@ -36,6 +41,8 @@ app.register_blueprint(dashboard_bp)
 app.register_blueprint(export_bp)
 app.register_blueprint(user_bp)
 app.register_blueprint(predio_bp)
+app.register_blueprint(reporte_bp)
+app.register_blueprint(audit_bp)
 
 
 # =========================================================
@@ -85,10 +92,17 @@ def inject_user():
             "username": session.get("username"),
             "role": session.get("role")
         },
-        "user_predios": session.get("predios", []),
+        "user_predios": session.get(
+            "predios",
+            []
+        ),
         "predios_disponibles": predios_disponibles,
-        "active_predio_id": session.get("active_predio_id"),
-        "active_predio_nombre": session.get("active_predio_nombre")
+        "active_predio_id": session.get(
+            "active_predio_id"
+        ),
+        "active_predio_nombre": session.get(
+            "active_predio_nombre"
+        )
     }
 
 
@@ -102,5 +116,4 @@ if __name__ == "__main__":
         port=Config.PORT,
         debug=Config.DEBUG
     )
-
 
