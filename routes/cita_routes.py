@@ -3,7 +3,7 @@
 from datetime import datetime
 
 import pytz
-
+from db import execute_query
 from flask import (
     Blueprint,
     render_template,
@@ -12,6 +12,10 @@ from flask import (
     url_for,
     flash,
     session
+)
+
+from services.audit_service import (
+    safe_log_action
 )
 
 from config import Config
@@ -1110,6 +1114,218 @@ def cancelar_cita(cita_id):
         url_for("citas.home")
     )
 
+# =========================================================
+# GUARDAR ANOTACIÓN EN CITA VENCIDA
+# =========================================================
+@cita_bp.route(
+    "/guardar-anotacion/<int:cita_id>",
+    methods=["POST"]
+)
+@login_required
+@role_required([
+    "SUPERADMIN",
+    "ADMIN",
+    "PREDIO",
+    "GUARDA"
+])
+def guardar_anotacion(cita_id):
+
+    context = get_user_cita_context()
+
+    cita = get_cita(
+        cita_id=cita_id,
+        predios=context[
+            "predio_ids"
+        ],
+        naviera=context[
+            "naviera"
+        ]
+    )
+
+    if not cita:
+
+        flash(
+            (
+                "La cita no existe o no tiene "
+                "permiso para acceder."
+            ),
+            "danger"
+        )
+
+        return redirect(
+            url_for("citas.vencidas")
+        )
+
+    # =====================================================
+    # SOLO CITAS VENCIDAS
+    # =====================================================
+    if cita["estado"] != "Vencida":
+
+        flash(
+            (
+                "Solo se pueden agregar anotaciones "
+                "a citas vencidas."
+            ),
+            "warning"
+        )
+
+        return redirect(
+            url_for("citas.vencidas")
+        )
+
+    # =====================================================
+    # OBTENER ANOTACIÓN
+    # =====================================================
+    anotacion = (
+        request.form.get(
+            "anotacion"
+        ) or ""
+    ).strip()
+
+    if not anotacion:
+
+        flash(
+            "Debe ingresar una anotación.",
+            "warning"
+        )
+
+        return redirect(
+            url_for("citas.vencidas")
+        )
+
+    # =====================================================
+    # GUARDAR
+    # =====================================================
+    query = """
+        UPDATE citas
+        SET
+            anotaciones = %s,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = %s
+          AND estado = 'Vencida'
+    """
+
+    execute_query(
+        query,
+        (
+            anotacion,
+            cita_id
+        ),
+        commit=True
+    )
+
+    # =====================================================
+    # AUDITORÍA
+    # =====================================================
+    safe_log_action(
+        action="GUARDAR_ANOTACION",
+        module="CITAS",
+        entity_id=cita_id,
+        details={
+            "anotacion": anotacion,
+            "predio_id": cita.get(
+                "predio_id"
+            ),
+            "naviera": cita.get(
+                "naviera"
+            )
+        }
+    )
+
+    flash(
+        "Anotación guardada correctamente.",
+        "success"
+    )
+
+    return redirect(
+        url_for("citas.vencidas")
+    )
+
+# =========================================================
+# GUARDAR ANOTACIÓN EN CITA
+# =========================================================
+@cita_bp.route(
+    "/guardar-anotacion/<int:cita_id>",
+    methods=["POST"]
+)
+@login_required
+@role_required([
+    "SUPERADMIN",
+    "ADMIN",
+    "PREDIO"
+])
+def guardar_anotacion(cita_id):
+
+    context = get_user_cita_context()
+
+    cita = get_cita(
+        cita_id=cita_id,
+        predios=context["predio_ids"],
+        naviera=context["naviera"]
+    )
+
+    if not cita:
+
+        flash(
+            "Cita no encontrada o sin permiso para acceder.",
+            "danger"
+        )
+
+        return redirect(
+            url_for("citas.vencidas")
+        )
+
+    anotacion = (
+        request.form.get(
+            "anotacion"
+        ) or ""
+    ).strip()
+
+    if not anotacion:
+
+        flash(
+            "Debe ingresar una anotación.",
+            "warning"
+        )
+
+        return redirect(
+            url_for("citas.vencidas")
+        )
+
+    query = """
+        UPDATE citas
+        SET
+            anotaciones = %s,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = %s
+    """
+
+    execute_query(
+        query,
+        (
+            anotacion,
+            cita_id
+        ),
+        commit=True
+    )
+
+    safe_log_action(
+        action="GUARDAR_ANOTACION",
+        module="CITAS",
+        entity_id=cita_id,
+        details={
+            "anotacion": anotacion
+        }
+    )
+
+    flash(
+        "Anotación guardada correctamente.",
+        "success"
+    )
+
+    return redirect(
+        url_for("citas.vencidas")
+    )
 
 # =========================================================
 # ELIMINAR CITA
