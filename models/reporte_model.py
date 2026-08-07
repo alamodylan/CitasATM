@@ -95,7 +95,7 @@ def get_merchant_report(
             ON p.id = c.predio_id
 
         WHERE c.estado = 'Completada'
-          AND c.fecha BETWEEN %s AND %s
+          AND c.fecha::date BETWEEN %s AND %s
     """
 
     params = [
